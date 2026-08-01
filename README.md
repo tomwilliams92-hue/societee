@@ -17,6 +17,7 @@ Started 1 August 2026.
 | `app/` | The product — Next.js 16, React 19, Tailwind 4 |
 | `supabase/schema.sql` | The database. Run this in Supabase when the project exists |
 | `docs/BRIEF.md` | The decisions: positioning, pricing, roles, what's in and out |
+| `docs/MARKET.md` | Who else is doing this, what they charge, and the handicap wall |
 | `docs/SETUP.md` | The accounts and keys Tom needs to open, in order |
 
 ## Run it
