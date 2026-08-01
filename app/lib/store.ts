@@ -8,13 +8,16 @@
  * no network. When Supabase is wired up, this one file is replaced with calls
  * to the tables in supabase/schema.sql — the shapes are deliberately identical.
  * No page imports supabase directly. Keep it that way.
+ *
+ * The seed below is entirely invented — fictional societies, fictional players,
+ * fictional scores. It exists to make the product demonstrable, nothing more.
  * ------------------------------------------------------------------------- */
 
 import { useSyncExternalStore } from "react";
 import type {
   EventEntry, GolfEvent, Player, Round, Season, SideComp, Society,
 } from "./types";
-import { COURSES, teeById } from "./courses";
+import { teeById } from "./courses";
 import { courseHandicap, playingHandicap } from "./scoring";
 
 const KEY = "societee.v1";
@@ -35,29 +38,36 @@ const id = (() => { let n = 0; return (p: string) => `${p}-${(++n).toString(36)}
 const token = (n = 7) =>
   Array.from({ length: n }, () => "abcdefghijkmnpqrstuvwxyz23456789"[Math.floor(Math.random() * 32)]).join("");
 
-/** Real rounds carried across from Conwy Choppers: [date, courseId, points, gross, courseHcp] */
-const CHOPPERS_ROUNDS: Record<string, [string, string, number, number, number][]> = {
-  tom: [
-    ["2026-07-22", "conwy", 35, 74, 1], ["2026-06-21", "conwy", 35, 74, 1],
-    ["2026-07-29", "conwy", 34, 75, 1], ["2026-07-09", "wallasey", 34, 73, -1],
-    ["2026-07-01", "bromborough", 34, 73, -1], ["2026-05-30", "conwy", 33, 76, 1],
-    ["2026-07-11", "conwy", 32, 77, 1], ["2026-06-20", "conwy", 32, 77, 1],
-    ["2026-07-19", "stmelyd", 31, 72, -2], ["2026-07-08", "conwy", 28, 78, -2],
-  ],
-  josh: [
-    ["2026-07-09", "wallasey", 36, 76, 4], ["2026-07-14", "abergele", 33, 78, 3],
-    ["2026-05-30", "conwy", 30, 84, 6], ["2026-07-22", "conwy", 28, 86, 6],
-    ["2026-07-19", "stmelyd", 28, 79, 2], ["2026-07-04", "conwy", 27, 84, 3],
-    ["2026-06-20", "conwy", 26, 88, 6],
-  ],
-  callum: [
-    ["2026-06-05", "conwy", 36, 101, 29], ["2026-07-22", "conwy", 34, 103, 29],
-    ["2026-07-19", "stmelyd", 33, 94, 22], ["2026-07-17", "conwy", 28, 109, 29],
-    ["2026-06-20", "conwy", 17, 120, 29], ["2026-07-04", "conwy", 15, 116, 23],
-  ],
-};
+/** Society 1 — a season-long Order of Merit. [name, index, [ [date, courseId, teeId, points, gross] ]] */
+const WANDERERS: [string, number, [string, string, string, number, number][]][] = [
+  ["Alan Merrick", -0.8, [
+    ["2026-07-25", "conwy", "conwy-white", 37, 72], ["2026-07-11", "conwy", "conwy-white", 35, 74],
+    ["2026-06-27", "wallasey", "wallasey-white", 34, 74], ["2026-06-13", "conwy", "conwy-white", 34, 75],
+    ["2026-07-04", "conwy", "conwy-white", 32, 77], ["2026-05-30", "conwy", "conwy-white", 31, 78],
+    ["2026-06-06", "conwy", "conwy-white", 29, 80],
+  ]],
+  ["Neil Sanderson", 7.4, [
+    ["2026-07-25", "conwy", "conwy-white", 38, 79], ["2026-06-27", "wallasey", "wallasey-white", 34, 83],
+    ["2026-07-11", "conwy", "conwy-white", 33, 84], ["2026-06-13", "conwy", "conwy-white", 32, 85],
+    ["2026-05-30", "conwy", "conwy-white", 30, 87], ["2026-07-04", "conwy", "conwy-white", 28, 89],
+  ]],
+  ["Gavin Hollis", 14.6, [
+    ["2026-07-11", "conwy", "conwy-white", 36, 88], ["2026-06-13", "conwy", "conwy-white", 35, 89],
+    ["2026-07-25", "conwy", "conwy-white", 31, 93], ["2026-05-30", "conwy", "conwy-white", 30, 94],
+    ["2026-06-27", "wallasey", "wallasey-white", 27, 98],
+  ]],
+  ["Martin Ashby", 19.9, [
+    ["2026-06-13", "conwy", "conwy-white", 35, 94], ["2026-07-25", "conwy", "conwy-white", 33, 96],
+    ["2026-07-04", "conwy", "conwy-white", 29, 100], ["2026-05-30", "conwy", "conwy-white", 24, 105],
+  ]],
+  ["Ken Baxter", 26.2, [
+    ["2026-07-04", "conwy", "conwy-white", 34, 102], ["2026-06-06", "conwy", "conwy-white", 30, 106],
+    ["2026-07-25", "conwy", "conwy-white", 26, 110],
+  ]],
+];
 
-const DOGS = [
+/** Society 2 — a golf day happening right now. */
+const SWINDLE = [
   ["Dave Prichard", 12.4], ["Steve Hughes", 18.1], ["Mark Ellis", 8.7],
   ["John Roberts", 24.2], ["Pete Vaughan", 15.0], ["Gareth Lloyd", 6.3],
   ["Ryan Doyle", 20.8], ["Liam Foster", 11.2], ["Chris Nolan", 27.4],
@@ -67,63 +77,62 @@ const DOGS = [
 function seed(): DB {
   const db: DB = { societies: [], players: [], seasons: [], events: [], entries: [], rounds: [], sideComps: [] };
 
-  /* -------- Society 1: Conwy Choppers — a season-long Order of Merit -------- */
-  const choppers: Society = {
-    id: "soc-choppers", slug: "conwy-choppers", name: "Conwy Choppers",
+  /* ---------- Society 1: a season-long Order of Merit across the summer ---- */
+  const wanderers: Society = {
+    id: "soc-wanderers", slug: "fairway-wanderers", name: "Fairway Wanderers",
     homeClub: "Conwy (Caernarvonshire)", accent: "#0B3D2C", createdAt: "2026-05-28",
   };
-  db.societies.push(choppers);
+  db.societies.push(wanderers);
   db.seasons.push({
-    id: "sea-2026", societyId: choppers.id, name: "Summer Order of Merit 2026",
+    id: "sea-2026", societyId: wanderers.id, name: "Summer Order of Merit 2026",
     startsOn: "2026-05-30", endsOn: "2026-09-30", bestN: 6,
-    prize: "Two sleeves of balls from every loser", isCurrent: true,
+    prize: "Winner takes the jug", isCurrent: true,
   });
 
-  const chopperPlayers: [string, string, string, number][] = [
-    ["tom", "Tom Williams", "Tom", -1.6],
-    ["josh", "Josh Morris", "Josh", 3.0],
-    ["callum", "Callum Bennett", "Callum", 21.3],
-  ];
-  for (const [key, name, short, hcp] of chopperPlayers) {
-    db.players.push({ id: `plr-${key}`, societyId: choppers.id, name, shortName: short, handicapIndex: hcp, active: true });
-    for (const [date, courseId, points, gross, chcp] of CHOPPERS_ROUNDS[key]) {
-      const tee = COURSES.find((c) => c.id === courseId)!.tees[courseId === "conwy" ? 1 : 0];
+  for (const [name, hcp, rounds] of WANDERERS) {
+    const pid = id("plr");
+    db.players.push({
+      id: pid, societyId: wanderers.id, name,
+      shortName: name.split(" ")[0], handicapIndex: hcp, active: true,
+    });
+    for (const [date, courseId, teeId, points, gross] of rounds) {
+      const t = teeById(teeId)!;
       db.rounds.push({
-        id: id("rnd"), playerId: `plr-${key}`,
-        eventId: null,                    // ← an ordinary club round, not a society day
-        courseId, teeId: tee.id, playedOn: date, format: "stableford",
-        gross, adjustedGross: gross, courseHandicap: chcp, stableford: points,
-        net: gross - chcp, source: "whs_import", verified: true,
+        id: id("rnd"), playerId: pid,
+        eventId: null,                    // an ordinary club round, not a society day
+        courseId, teeId, playedOn: date, format: "stableford",
+        gross, adjustedGross: gross,
+        courseHandicap: playingHandicap(courseHandicap(hcp, t), 95),
+        stableford: points, net: null,
+        source: "manual", verified: false,
       });
     }
   }
 
-  /* ---------- Society 2: Weekend Dogs — a live golf day, 12 players ---------- */
-  const dogs: Society = {
-    id: "soc-dogs", slug: "weekend-dogs", name: "Weekend Dogs",
+  /* -------------- Society 2: a live golf day, 12 players, half in ---------- */
+  const swindle: Society = {
+    id: "soc-swindle", slug: "saturday-swindle", name: "Saturday Swindle",
     homeClub: "Nomadic", accent: "#0B3D2C", createdAt: "2026-06-14",
   };
-  db.societies.push(dogs);
+  db.societies.push(swindle);
 
   const tee = teeById("conwy-white")!;
   const ev: GolfEvent = {
-    id: "evt-dogs-aug", societyId: dogs.id, courseId: "conwy", teeId: tee.id,
+    id: "evt-swindle-aug", societyId: swindle.id, courseId: "conwy", teeId: tee.id,
     name: "August Meeting", playsOn: "2026-08-01", teeTime: "09:20",
     format: "stableford", handicapAllowance: 95, status: "live",
-    shareToken: "dogsaug", notes: "£10 in the pot. Two-tee start.",
+    shareToken: "augmeet", notes: "£10 in the pot. Two-tee start.",
   };
   db.events.push(ev);
 
-  // A believable spread of a day half-played: some in, some still out there.
   const played = [38, 36, 35, 34, 33, 31, 30, 28, null, null, null, null];
-  DOGS.forEach(([name, hcp], i) => {
+  SWINDLE.forEach(([name, hcp], i) => {
     const pid = id("plr");
     db.players.push({
-      id: pid, societyId: dogs.id, name,
+      id: pid, societyId: swindle.id, name,
       shortName: name.split(" ")[0], handicapIndex: hcp, active: true,
     });
-    const ch = courseHandicap(hcp, tee);
-    const ph = playingHandicap(ch, ev.handicapAllowance);
+    const ph = playingHandicap(courseHandicap(hcp, tee), ev.handicapAllowance);
     db.entries.push({
       id: id("ent"), eventId: ev.id, playerId: pid,
       playingHandicap: ph,

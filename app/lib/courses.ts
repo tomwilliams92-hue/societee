@@ -1,9 +1,9 @@
 /* ---------------------------------------------------------------------------
- * Course seed data.
+ * Course seed data — a handful of North Wales / Wirral clubs to build against.
  *
- * CR / Slope / Par are REAL — carried over from the Conwy Choppers engine
- * (engine/courses.js), read off the Wales Golf scores table and back-solved
- * against actual course handicaps.
+ * CR / Slope / Par are real published course ratings. Every course a society
+ * plays needs a row here before its rounds can be scored, so this table grows
+ * into a proper course database over time.
  *
  * ⚠️  The per-hole `par` / `strokeIndex` arrays below are PLACEHOLDERS. They
  * are a plausible standard layout, NOT the real cards. Live hole-by-hole

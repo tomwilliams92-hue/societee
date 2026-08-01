@@ -1,8 +1,12 @@
 /* ---------------------------------------------------------------------------
  * Stableford / WHS maths.
  *
- * Ported from the Conwy Choppers engine (engine/lib.mjs), which was verified
- * against a real Wales Golf round:  36 + 29 + 72 − 101 = 36 ✓
+ * The two formulas everything rests on:
+ *   Course Handicap = round( Index × Slope/113 + (CR − Par) )
+ *   Stableford      = 36 + PlayingHandicap + Par − AdjustedGross
+ *
+ * Sanity check with real numbers — 29 course handicap, par 72, 101 adjusted
+ * gross:  36 + 29 + 72 − 101 = 36 points.
  *
  * Handicap convention throughout: PLUS GOLFERS ARE NEGATIVE (+1.6 => -1.6).
  * ------------------------------------------------------------------------- */

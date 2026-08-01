@@ -97,13 +97,12 @@ like anything but generic sports software.
 scans a code. That removes the single biggest reason group apps die on the
 first tee.
 
-**3. There's already a working prototype with real users.** Conwy Choppers has
-been running a real season for three golfers since May, with a scraper pulling
-**official Wales Golf scores** rather than typed-in ones. Verified scores are
-a genuinely hard thing to build and Societee starts with one that works.
-
-**4. Every event is a demo.** Sixteen players scan a QR code and spend four
+**3. Every event is a demo.** Sixteen players scan a QR code and spend four
 hours looking at your product. That's the referral loop, and it's free.
+
+**4. Tom is the customer.** He organises the golf, he's played off plus figures,
+and he knows what an organiser actually spends Sunday night doing. Features come
+from real irritations rather than guesses.
 
 ## The one thing to get right first
 
@@ -113,24 +112,22 @@ flow is delightful, the rest follows. If it isn't, no feature saves it.
 
 ## Roadmap
 
-**Now — v1.** The scope above, on real infrastructure, used by Conwy Choppers
-and one other society for a real season.
+**Now — v1.** The scope above, on real infrastructure, running one or two real
+societies through a real season.
 
-**Then — earn the subscription.** Season stats, records, head-to-head, the
-handicap and form views that already exist in Conwy Choppers. Photos. PDF
-results for the WhatsApp group.
+**Then — earn the subscription.** Season stats, records, head-to-head, form and
+handicap trends. Photos. PDF results for the WhatsApp group.
 
 **Later — worth paying more for.** Club tier: branding, sponsor logos, multiple
-organisers, exports. Score import from the WHS platforms so organisers stop
-typing. AI event write-ups, as a Pro feature, only once it's cheap and only if
-organisers actually want it.
+organisers, exports. AI event write-ups, as a Pro feature, only once it's cheap
+and only if organisers actually want it.
 
 ## Open questions
 
-- **Score import at scale.** The Wales Golf scraper works for Tom's own login
-  and his friends. Doing that for other people's accounts is a different
-  problem — credentials, terms of service, and whether an official route exists.
-  Fine for now; it's not in v1.
+- **Course data.** Every course a society plays needs its CR, slope and par
+  before rounds can be scored, and its full card before hole-by-hole scoring
+  works. A handful are seeded. How that table gets filled at scale — organisers
+  entering them, or a bulk source — is unsolved and will bite eventually.
 - **Trade marks.** Domains are clear. Whether "Societee" is registrable, or
   already registered by someone, is unchecked — see `SETUP.md`.
 - **First twenty organisers.** The real risk isn't building it. Tom's own club,

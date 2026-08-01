@@ -15,14 +15,12 @@
 --  ...and both are the same shape. That is required by the core product, not
 --  by anything speculative: a season-long Order of Merit counts a member's
 --  qualifying club rounds, not just the days the society turns out together.
---  Conwy Choppers already works exactly this way.
 --
 --  HANDICAP CONVENTION
 --  -------------------
---  handicap_index is NUMERIC and PLUS GOLFERS ARE NEGATIVE. Tom plays off +1.6,
---  which is stored as -1.6. This matches parseHi() in the existing Conwy
---  Choppers engine, so the maths carries over untouched. Never store "+1.6" as
---  a string; format it for display only.
+--  handicap_index is NUMERIC and PLUS GOLFERS ARE NEGATIVE — a golfer off +1.6
+--  is stored as -1.6, so the arithmetic works without a special case anywhere.
+--  Never store "+1.6" as a string; format it for display only.
 -- ============================================================================
 
 create extension if not exists "uuid-ossp";
@@ -143,7 +141,7 @@ create index on players (society_id);
 create index on players (claimed_by) where claimed_by is not null;
 
 -- ---------------------------------------------------------------------------
--- SEASONS  (Order of Merit — lifted straight from Conwy Choppers)
+-- SEASONS  (the Order of Merit that runs across a summer)
 -- ---------------------------------------------------------------------------
 create table seasons (
   id         uuid primary key default gen_random_uuid(),
