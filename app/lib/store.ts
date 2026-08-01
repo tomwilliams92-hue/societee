@@ -220,12 +220,25 @@ export const actions = {
     });
   },
 
-  createEvent(societyId: string, input: { name: string; playsOn: string; teeId: string; playerIds: string[] }) {
+  createEvent(
+    societyId: string,
+    input: {
+      name: string; playsOn: string; teeId: string; playerIds: string[];
+      /**
+       * Playing handicap allowance, %. 95 is the WHS default for individual
+       * Stableford and is *mandatory* in England until 2028. Ireland, Scotland
+       * and Wales allow 85/90/95/100 for singles from 1 Apr 2026, so this has
+       * to be a choice rather than a constant.
+       */
+      handicapAllowance?: number;
+    }
+  ) {
     const tee = teeById(input.teeId)!;
     const ev: GolfEvent = {
       id: id("evt"), societyId, courseId: tee.courseId, teeId: tee.id,
       name: input.name, playsOn: input.playsOn, format: "stableford",
-      handicapAllowance: 95, status: "live", shareToken: token(),
+      handicapAllowance: input.handicapAllowance ?? 95,
+      status: "live", shareToken: token(),
     };
     update((db) => {
       db.events.push(ev);

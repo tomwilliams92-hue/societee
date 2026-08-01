@@ -96,10 +96,14 @@ Real, immature, and filling up fast — three UK entrants in fourteen months.
 
 ### Free
 
-**Quick9** (free, no ads; distribution deal with PlayMoreGolf across 200+
-courses), **Club Sports** (genuinely free, dated), **Society Golf App** (v1.0.4,
-Jan 2026, too new to rate), and **WaCaS** — in beta, explicitly built for UK golf
-days, pricing and operator undisclosed. Worth watching.
+**Quick9** (no ads; distribution deal with PlayMoreGolf across 200+ courses),
+**Golf Society Manager** (golfsocietymanager.com — free, no card, 20 formats,
+live leaderboards, AI scorecard import), **Club Sports** (genuinely free, dated),
+**Society Golf App** (v1.0.4, Jan 2026, too new to rate), **Golfing Society
+Websites** (society sites with match management — members *bid* for places and
+teams are picked automatically, which is a genuinely different idea), and
+**WaCaS** — in beta, explicitly built for UK golf days, pricing and operator
+undisclosed. Worth watching.
 
 ### The verdict on price
 
@@ -169,11 +173,22 @@ golfers." Same global handicap system, different door policy.
 Act 1990. The only technical route is harvesting golfers' credentials — a
 business-ending risk, not a shortcut.
 
-One genuine bright spot: society rounds **do** count for WHS if played under the
-Rules and submitted by the golfer through MyEG, and club members, iGolf
-subscribers and free iPlay users can all verify each other's cards provided they
-witnessed the round. Societee can help produce a card the golfer submits
-himself, without ever touching the handicap system.
+Society rounds **can** count for WHS, but with a catch worth knowing before we
+promise anything: in GB&I a player must **pre-register before teeing off** for a
+score to count, and pre-registration happens on club terminals or the
+club/governing-body apps — not on ours. Register after your tee time and the
+score is ineligible. So the most Societee can honestly offer is helping produce a
+card the golfer submits himself, having pre-registered elsewhere.
+
+Card verification is the easy half: club members, iGolf subscribers and free
+iPlay users can all verify each other, provided the verifier witnessed the round.
+
+**One more nuance on iGolf.** Its terms say a subscriber "will not have the right
+to enter into club, county or England Golf competitions (competition entry
+remains at the discretion of the competition organiser)." For our purposes that
+sentence is *good news* — in a society competition, the organiser **is** the
+competition organiser, so an iGolf index is perfectly usable. It's club and
+county events that are closed.
 
 ---
 
@@ -200,6 +215,31 @@ someone predicts, or is drawn at random, needs a licence.)*
 
 ---
 
+---
+
+## ⚠️ The four home nations stopped applying WHS identically — build for this
+
+**From 1 April 2026, Ireland, Scotland and Wales adopted flexible Playing
+Handicap allowances.** Organisers there may set singles at **85 / 90 / 95 /
+100%** and fourball at **75 / 80 / 85 / 90%**.
+
+**England declined**, postponing until 2028 "in line with the wider WHS review
+cycle." So 95% singles and 85% fourball remain mandatory in England.
+
+This is a direct product requirement, not background reading:
+
+- **Tom's societies play in Wales, where the flexibility applies.** A Welsh
+  society can legitimately run a day off 90%, and if we hardcode 95% we'll be
+  scoring it wrong.
+- The allowance therefore has to be **selectable per event**, defaulting to 95%,
+  with fourball allowances available when team formats arrive.
+- `events.handicap_allowance` already exists in the schema for exactly this.
+
+Any competitor that assumed a single UK-wide rule is now quietly wrong in three
+of the four unions. That's a small, real, checkable advantage.
+
+---
+
 ## Incumbents are channel, not competition
 
 Every UK club system sells to the **affiliated club**. Where "societies" appear
@@ -208,16 +248,29 @@ the buyer.
 
 - **ClearCourse** owns HowDidiDo, ClubV1, Club Systems and intelligentgolf
   (acquired 2019 and Sept 2022) — ~2,000 clubs, ~1m golfers across UK & Ireland.
-  No society-facing product exists.
-- **BRS Golf** — NBC Sports Next / GolfNow since 2013. 1,500+ clubs, 680,000+
-  members. Partners with Golf Genius so *clubs* can monetise society days.
-- **Golf Genius** — outings product marketed to facilities. No self-serve
-  society tier, no published pricing.
+  No society-facing product. HowDidiDo's January 2026 rebuild actually *tightened*
+  the gate: you now register by matching yourself to an existing player record at
+  a subscribing club. There is no non-club signup path at all.
+- **intelligentgolf** does advertise "society and golf day management" — but the
+  page is written for the club managing its *visiting* society business: block
+  tee bookings, room bookings, menu choices, revenue tracking.
+- **BRS Golf** — 1,500+ clubs, 675,000+ members. Owned by GolfNow, which moved
+  from Comcast to **Versant Media Group** in the January 2026 spin-off; the "NBC
+  Sports Next" brand has been retired. Partners with Golf Genius so *clubs* can
+  monetise society days.
 - **HandicapMaster** is a licensed ISV and *still* can only offer societies
   private "local handicapping".
 
-**None of them sells to the society. That gap is the whole opportunity** — and
-they're all potential distribution partners rather than rivals.
+**Almost none of them sells to the society. That gap is the whole opportunity** —
+and they're all better viewed as distribution partners than rivals.
+
+**The one exception, and it's worth watching.** Golf Genius sells **Trip Manager
+at $149 per trip** (up to 12 rounds, 36 players) directly to an organiser, no
+facility required. It has zero UK localisation, prices in dollars, and can't
+touch official handicaps — but it *is* a self-serve product an organiser can buy
+today, from a company that is an authorised WHS licensee to all four home nations
+and England Golf's official tournament software supplier. If anyone has the
+credentials to solve the handicap problem, it's them.
 
 Two more worth knowing:
 

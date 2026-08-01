@@ -124,6 +124,7 @@ export function SocietyView({ slug }: { slug: string }) {
       name: "",
       playsOn: new Date().toISOString().slice(0, 10),
       teeId: "conwy-white",
+      handicapAllowance: 95,
     });
 
     return (
@@ -140,7 +141,7 @@ export function SocietyView({ slug }: { slug: string }) {
 
         {open && (
           <form
-            className="card mb-5 grid gap-3 p-4 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end"
+            className="card mb-5 grid gap-3 p-4 sm:grid-cols-[1fr_auto_auto_auto_auto] sm:items-end"
             onSubmit={(e) => {
               e.preventDefault();
               if (!form.name.trim() || playerIds.length === 0) return;
@@ -184,9 +185,25 @@ export function SocietyView({ slug }: { slug: string }) {
                 )}
               </select>
             </label>
+            <label>
+              <span className="label mb-1.5 block">Allowance</span>
+              <select
+                className="field"
+                value={form.handicapAllowance}
+                onChange={(e) => setForm({ ...form, handicapAllowance: Number(e.target.value) })}
+              >
+                {[85, 90, 95, 100].map((a) => (
+                  <option key={a} value={a}>
+                    {a}%{a === 95 ? " (default)" : ""}
+                  </option>
+                ))}
+              </select>
+            </label>
             <button className="btn btn-primary" type="submit">Create</button>
-            <p className="label sm:col-span-4">
+            <p className="label sm:col-span-5">
               All {playerIds.length} players are entered by default — take people out on the day.
+              Singles Stableford is <b>95%</b> under WHS, and that is still mandatory in England;
+              Wales, Scotland and Ireland have allowed 85–100% since April 2026.
             </p>
           </form>
         )}
