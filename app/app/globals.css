@@ -1,0 +1,304 @@
+@import "tailwindcss";
+
+/* ============================================================================
+   SOCIETEE — design system
+   Concept: the clubhouse honours board. Cream scorecard paper, bottle green,
+   brass rules, engraved serif. Every competitor in this category looks like
+   generic sports SaaS; this should look like it belongs in a clubhouse.
+   ========================================================================= */
+
+@theme {
+  --color-paper:       #f7f2e6;
+  --color-paper-2:     #efe7d5;
+  --color-paper-3:     #e5dbc5;
+  --color-ink:         #14261d;
+  --color-ink-soft:    #55645b;
+  --color-green:       #0b3d2c;
+  --color-green-deep:  #06251a;
+  --color-green-lift:  #14523c;
+  --color-brass:       #c09a3e;
+  --color-brass-lift:  #e3c274;
+  --color-flag:        #a8322a;
+  --color-fairway:     #2f7f55;
+
+  --font-display: var(--font-fraunces);
+  --font-sans:    var(--font-figtree);
+  --font-mono:    var(--font-plex-mono);
+}
+
+:root {
+  --rule: rgba(20, 38, 29, 0.14);
+  --rule-strong: rgba(20, 38, 29, 0.28);
+  --brass-rule: rgba(192, 154, 62, 0.42);
+}
+
+/* Paper grain — a real texture, not a flat fill. Sits under everything. */
+html {
+  background-color: var(--color-paper);
+  background-image:
+    radial-gradient(ellipse 90rem 40rem at 50% -10%, rgba(11, 61, 44, 0.07), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.055'/%3E%3C/svg%3E");
+}
+
+body {
+  color: var(--color-ink);
+  font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: "ss01", "cv01";
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection { background: var(--color-brass); color: var(--color-green-deep); }
+
+/* ---------------------------------------------------------------- type -- */
+
+.display {
+  font-family: var(--font-display), Georgia, serif;
+  font-variation-settings: "SOFT" 0, "WONK" 1, "opsz" 42;
+  font-weight: 600;
+  letter-spacing: -0.022em;
+  line-height: 0.98;
+}
+
+.engraved {
+  font-family: var(--font-display), Georgia, serif;
+  font-variation-settings: "SOFT" 0, "WONK" 0, "opsz" 28;
+  font-weight: 500;
+}
+
+/* Small caps label — the printed-form register that runs through the whole UI */
+.label {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  color: var(--color-ink-soft);
+}
+
+.num {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+  letter-spacing: -0.03em;
+}
+
+/* ------------------------------------------------------- paper surfaces -- */
+
+.card {
+  background: linear-gradient(180deg, #fffdf7 0%, var(--color-paper) 100%);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.9) inset,
+    0 1px 2px rgba(20, 38, 29, 0.06),
+    0 12px 28px -18px rgba(20, 38, 29, 0.35);
+}
+
+/* Scorecard perforation down the left edge */
+.perforated {
+  position: relative;
+  padding-left: 1.35rem;
+}
+.perforated::before {
+  content: "";
+  position: absolute;
+  left: 0.55rem;
+  top: 0.75rem;
+  bottom: 0.75rem;
+  width: 3px;
+  background-image: radial-gradient(circle, var(--rule-strong) 1.4px, transparent 1.5px);
+  background-size: 3px 9px;
+}
+
+/* The double rule you find on a printed card */
+.rule-double {
+  border-top: 1px solid var(--rule-strong);
+  box-shadow: 0 3px 0 -2px var(--rule);
+}
+
+/* ------------------------------------------------ THE HONOURS BOARD ★ ---- */
+
+.board {
+  background:
+    linear-gradient(180deg, var(--color-green-lift) 0%, var(--color-green) 22%, var(--color-green-deep) 100%);
+  border-radius: 5px;
+  padding: 3px;
+  box-shadow:
+    0 0 0 1px rgba(6, 37, 26, 0.9),
+    0 18px 40px -22px rgba(6, 37, 26, 0.85),
+    0 2px 0 rgba(255, 255, 255, 0.14) inset;
+  position: relative;
+  overflow: hidden;
+}
+.board::after {
+  /* varnish sheen across the top-left, like a painted board under clubhouse light */
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(146deg, rgba(255, 255, 255, 0.09) 0%, transparent 38%);
+}
+.board-in {
+  border: 1px solid var(--brass-rule);
+  border-radius: 3px;
+  padding: clamp(1rem, 3.5vw, 1.75rem);
+}
+
+.board-row {
+  display: grid;
+  grid-template-columns: 2.25rem 1fr auto;
+  align-items: baseline;
+  gap: 0.75rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid rgba(192, 154, 62, 0.18);
+  color: #eae3cf;
+}
+.board-row:last-child { border-bottom: 0; }
+.board-row .nm {
+  font-family: var(--font-display), Georgia, serif;
+  font-variation-settings: "SOFT" 0, "WONK" 0, "opsz" 24;
+  font-weight: 500;
+  font-size: 1.075rem;
+  letter-spacing: 0.004em;
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
+}
+.board-row.lead { color: var(--color-brass-lift); }
+.board-row.lead .nm {
+  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6), 0 0 22px rgba(224, 194, 116, 0.28);
+}
+.board-row .pos {
+  font-family: var(--font-mono), monospace;
+  font-size: 0.8125rem;
+  color: rgba(192, 154, 62, 0.85);
+  font-variant-numeric: tabular-nums;
+}
+.board-row .pts {
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.2rem;
+  font-weight: 500;
+  letter-spacing: -0.035em;
+}
+
+/* ------------------------------------------------------------ controls -- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.875rem;
+  padding: 0 1.15rem;
+  border-radius: 3px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  letter-spacing: 0.005em;
+  border: 1px solid transparent;
+  cursor: pointer;
+  transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.18s, background 0.18s;
+}
+.btn:active { transform: translateY(1px); }
+
+.btn-primary {
+  background: linear-gradient(180deg, var(--color-green-lift), var(--color-green));
+  color: #f4efdf;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.16) inset, 0 8px 18px -12px rgba(6, 37, 26, 0.9);
+}
+.btn-primary:hover { background: linear-gradient(180deg, #1a6349, var(--color-green-lift)); }
+
+.btn-brass {
+  background: linear-gradient(180deg, var(--color-brass-lift), var(--color-brass));
+  color: var(--color-green-deep);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 8px 18px -12px rgba(120, 92, 20, 0.7);
+}
+
+.btn-ghost {
+  background: transparent;
+  border-color: var(--rule-strong);
+  color: var(--color-ink);
+}
+.btn-ghost:hover { background: rgba(20, 38, 29, 0.045); }
+
+.field {
+  width: 100%;
+  min-height: 2.875rem;
+  padding: 0 0.85rem;
+  background: #fffdf7;
+  border: 1px solid var(--rule-strong);
+  border-radius: 3px;
+  color: var(--color-ink);
+  font: inherit;
+}
+.field:focus {
+  outline: none;
+  border-color: var(--color-green);
+  box-shadow: 0 0 0 3px rgba(11, 61, 44, 0.13);
+}
+
+/* Big thumbable score box — used on the first tee, in the wind, one-handed */
+.score-input {
+  width: 4.25rem;
+  height: 3.25rem;
+  text-align: center;
+  font-family: var(--font-mono), monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 1.35rem;
+  font-weight: 500;
+  background: #fffdf7;
+  border: 1.5px solid var(--rule-strong);
+  border-radius: 3px;
+  color: var(--color-ink);
+}
+.score-input:focus {
+  outline: none;
+  border-color: var(--color-brass);
+  box-shadow: 0 0 0 3px rgba(192, 154, 62, 0.22);
+}
+/* no spinners — they're useless with a thumb */
+.score-input::-webkit-outer-spin-button,
+.score-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+.score-input { -moz-appearance: textfield; }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 2px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border: 1px solid var(--rule-strong);
+  color: var(--color-ink-soft);
+}
+.chip-live {
+  border-color: rgba(168, 50, 42, 0.4);
+  color: var(--color-flag);
+  background: rgba(168, 50, 42, 0.07);
+}
+
+.pulse {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--color-flag);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(168, 50, 42, 0.5); }
+  50%      { opacity: 0.55; box-shadow: 0 0 0 5px rgba(168, 50, 42, 0); }
+}
+
+/* -------------------------------------------------------------- motion -- */
+
+@keyframes rise {
+  from { opacity: 0; transform: translateY(9px); }
+  to   { opacity: 1; transform: none; }
+}
+.rise { animation: rise 0.55s cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
