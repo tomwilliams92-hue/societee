@@ -1,5 +1,5 @@
-/* The Societee seal — a ball on a tee inside a brass roundel. Reads as a club
-   crest at 24px on a phone header and at 96px on the public board. */
+/* The Societee mark — a ball on a tee, cut down to a hard geometric badge.
+   Reads at 22px on a phone header and at 60px on the public board. */
 export function Crest({ size = 28, className = "" }: { size?: number; className?: string }) {
   return (
     <svg
@@ -10,30 +10,21 @@ export function Crest({ size = 28, className = "" }: { size?: number; className?
       aria-hidden="true"
       className={className}
     >
-      <circle cx="32" cy="32" r="30.5" fill="var(--color-green-deep)" />
-      <circle cx="32" cy="32" r="30.5" stroke="var(--color-brass)" strokeWidth="1.4" />
-      <circle cx="32" cy="32" r="26" stroke="var(--color-brass)" strokeWidth="0.7" opacity="0.55" />
+      <rect x="1" y="1" width="62" height="62" rx="3" fill="#0d1116" stroke="#232c33" strokeWidth="1.5" />
       {/* ball */}
-      <circle cx="32" cy="24.5" r="8.5" fill="var(--color-brass-lift)" />
-      <circle cx="29.2" cy="21.8" r="1.05" fill="var(--color-green-deep)" opacity="0.45" />
-      <circle cx="33.6" cy="21.2" r="1.05" fill="var(--color-green-deep)" opacity="0.45" />
-      <circle cx="35.2" cy="25.4" r="1.05" fill="var(--color-green-deep)" opacity="0.45" />
-      <circle cx="30.6" cy="26.6" r="1.05" fill="var(--color-green-deep)" opacity="0.45" />
+      <circle cx="32" cy="24" r="9" fill="var(--color-acid)" />
       {/* tee */}
-      <path
-        d="M23.5 34.5h17l-5.6 4.2-1.5 11.3h-2.8l-1.5-11.3z"
-        fill="var(--color-brass)"
-      />
-      {/* turf line */}
-      <path d="M14 47h9M41 47h9" stroke="var(--color-brass)" strokeWidth="1.2" strokeLinecap="round" opacity="0.7" />
+      <path d="M22 35h20l-6.6 5-1.6 12h-3.6l-1.6-12z" fill="var(--color-acid)" />
+      {/* ground line */}
+      <path d="M10 52h44" stroke="var(--color-acid)" strokeWidth="2" strokeLinecap="square" opacity="0.35" />
     </svg>
   );
 }
 
 export function Wordmark({ className = "" }: { className?: string }) {
   return (
-    <span className={`display text-[1.35rem] leading-none ${className}`}>
-      Socie<span style={{ color: "var(--color-brass)" }}>tee</span>
+    <span className={`display text-[1.15rem] leading-none tracking-tight ${className}`}>
+      SOCIE<span style={{ color: "var(--color-acid)" }}>TEE</span>
     </span>
   );
 }

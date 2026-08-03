@@ -27,7 +27,7 @@ export default function Home() {
             Run your golf society without the spreadsheets.
           </h1>
           <p
-            className="mt-5 max-w-[52ch] text-[1.0625rem] leading-relaxed text-[var(--color-ink-soft)] rise"
+            className="mt-5 max-w-[52ch] text-[1.0625rem] leading-relaxed text-[var(--color-dim)] rise"
             style={{ animationDelay: "120ms" }}
           >
             Create a society, add your players, run the day. The leaderboard goes up on a QR
@@ -104,18 +104,18 @@ export default function Home() {
               <Link
                 key={s.id}
                 href={`/s/${s.slug}`}
-                className="card perforated block p-5 transition-transform hover:-translate-y-0.5 rise"
+                className="card feed block p-5 transition-transform hover:-translate-y-0.5 rise"
                 style={{ animationDelay: `${i * 70}ms` }}
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="engraved truncate text-[1.3rem] leading-tight">{s.name}</h3>
+                    <h3 className="name truncate text-[1.3rem] leading-tight">{s.name}</h3>
                     <p className="label mt-1">{s.homeClub ?? "No home club"}</p>
                   </div>
                   <Crest size={30} className="shrink-0 opacity-90" />
                 </div>
 
-                <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--rule)] pt-3.5">
+                <div className="mt-5 flex flex-wrap items-center gap-x-6 gap-y-2 border-t border-[var(--color-line)] pt-3.5">
                   <Stat label="Players" value={String(players.length)} />
                   <Stat label="Events" value={String(events.length)} />
                   {leader && <Stat label="Leading" value={leader.name} sub={`${leader.total} pts`} />}
@@ -141,11 +141,11 @@ export default function Home() {
               ["Enter the scores", "Type a gross, get Stableford. The board updates as you go."],
             ].map(([t, d], i) => (
               <li key={t} className="card p-4">
-                <span className="num text-[1.6rem] leading-none" style={{ color: "var(--color-brass)" }}>
+                <span className="num text-[1.6rem] leading-none" style={{ color: "var(--color-acid)" }}>
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <h4 className="engraved mt-2 text-[1.05rem]">{t}</h4>
-                <p className="mt-1.5 text-[0.875rem] leading-relaxed text-[var(--color-ink-soft)]">{d}</p>
+                <h4 className="name mt-2 text-[1.05rem]">{t}</h4>
+                <p className="mt-1.5 text-[0.875rem] leading-relaxed text-[var(--color-dim)]">{d}</p>
               </li>
             ))}
           </ol>
@@ -169,7 +169,7 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
       <span className="label block leading-none">{label}</span>
       <span className="num mt-1 block text-[0.95rem]">
         {value}
-        {sub && <span className="ml-1.5 text-[0.78rem] text-[var(--color-ink-soft)]">{sub}</span>}
+        {sub && <span className="ml-1.5 text-[0.78rem] text-[var(--color-dim)]">{sub}</span>}
       </span>
     </span>
   );

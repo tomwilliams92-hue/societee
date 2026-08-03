@@ -1,299 +1,327 @@
 @import "tailwindcss";
 
 /* ============================================================================
-   SOCIETEE — design system
-   Concept: the clubhouse honours board. Cream scorecard paper, bottle green,
-   brass rules, engraved serif. Every competitor in this category looks like
-   generic sports SaaS; this should look like it belongs in a clubhouse.
+   SOCIETEE — design system v2 "broadcast"
+   Live sports coverage, not clubhouse furniture. Near-black, acid lime, heavy
+   condensed caps, and numbers big enough to read at arm's length in sunlight.
+   The score is the loudest thing on every screen.
    ========================================================================= */
 
 @theme {
-  --color-paper:       #f7f2e6;
-  --color-paper-2:     #efe7d5;
-  --color-paper-3:     #e5dbc5;
-  --color-ink:         #14261d;
-  --color-ink-soft:    #55645b;
-  --color-green:       #0b3d2c;
-  --color-green-deep:  #06251a;
-  --color-green-lift:  #14523c;
-  --color-brass:       #c09a3e;
-  --color-brass-lift:  #e3c274;
-  --color-flag:        #a8322a;
-  --color-fairway:     #2f7f55;
+  --color-ink:      #06080a;   /* page */
+  --color-panel:    #0d1116;   /* raised surface */
+  --color-panel-2:  #141a20;   /* input / hover */
+  --color-line:     #232c33;
+  --color-text:     #f1f5f2;
+  --color-dim:      #8b968f;
+  --color-acid:     #c8ff3c;   /* the accent. use it sparingly and it shouts */
+  --color-acid-dim: #8fae2c;
+  --color-live:     #ff4438;
+  --color-under:    #4ad6a0;   /* better than par */
 
-  --font-display: var(--font-fraunces);
-  --font-sans:    var(--font-figtree);
-  --font-mono:    var(--font-plex-mono);
+  --font-display: var(--font-archivo);
+  --font-sans:    var(--font-archivo);
+  --font-mono:    var(--font-mono-tech);
 }
 
 :root {
-  --rule: rgba(20, 38, 29, 0.14);
-  --rule-strong: rgba(20, 38, 29, 0.28);
-  --brass-rule: rgba(192, 154, 62, 0.42);
+  --line: #232c33;
+  --line-soft: rgba(241, 245, 242, 0.08);
 }
 
-/* Paper grain — a real texture, not a flat fill. Sits under everything. */
 html {
-  background-color: var(--color-paper);
-  background-image:
-    radial-gradient(ellipse 90rem 40rem at 50% -10%, rgba(11, 61, 44, 0.07), transparent 70%),
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3CfeColorMatrix type='saturate' values='0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)' opacity='.055'/%3E%3C/svg%3E");
+  background: var(--color-ink);
+  color-scheme: dark;
 }
 
 body {
-  color: var(--color-ink);
+  color: var(--color-text);
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
-  font-feature-settings: "ss01", "cv01";
+  font-variation-settings: "wdth" 100;
   -webkit-tap-highlight-color: transparent;
+  /* faint broadcast grain so flat blacks don't band on OLED */
+  background-image:
+    radial-gradient(ellipse 60rem 30rem at 50% -8%, rgba(200, 255, 60, 0.055), transparent 70%),
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
 }
 
-::selection { background: var(--color-brass); color: var(--color-green-deep); }
+::selection { background: var(--color-acid); color: #06080a; }
 
-/* ---------------------------------------------------------------- type -- */
+/* ----------------------------------------------------------------- type -- */
 
+/* Headline: heavy, condensed, uppercase. The broadcast lower-third voice. */
 .display {
-  font-family: var(--font-display), Georgia, serif;
-  font-variation-settings: "SOFT" 0, "WONK" 1, "opsz" 42;
-  font-weight: 600;
-  letter-spacing: -0.022em;
-  line-height: 0.98;
+  font-family: var(--font-display), Impact, sans-serif;
+  font-variation-settings: "wdth" 76;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: -0.012em;
+  line-height: 0.88;
 }
 
-.engraved {
-  font-family: var(--font-display), Georgia, serif;
-  font-variation-settings: "SOFT" 0, "WONK" 0, "opsz" 28;
-  font-weight: 500;
+/* Names on a leaderboard: condensed but readable, not shouted. */
+.name {
+  font-family: var(--font-display), sans-serif;
+  font-variation-settings: "wdth" 88;
+  font-weight: 650;
+  letter-spacing: 0.004em;
+  text-transform: uppercase;
 }
 
-/* Small caps label — the printed-form register that runs through the whole UI */
+/* Small meta label — the stuff around the edges of a sports graphic. */
 .label {
   font-size: 0.6875rem;
-  font-weight: 600;
-  letter-spacing: 0.15em;
+  font-weight: 650;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--color-ink-soft);
+  color: var(--color-dim);
+  font-variation-settings: "wdth" 96;
 }
 
+/* Every number in the app. Tabular, tight, confident. */
 .num {
-  font-family: var(--font-mono), ui-monospace, monospace;
   font-variant-numeric: tabular-nums;
   font-feature-settings: "tnum";
-  letter-spacing: -0.03em;
+  font-variation-settings: "wdth" 84;
+  font-weight: 700;
+  letter-spacing: -0.02em;
 }
 
-/* ------------------------------------------------------- paper surfaces -- */
+.mono {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* --------------------------------------------------------------- surface -- */
 
 .card {
-  background: linear-gradient(180deg, #fffdf7 0%, var(--color-paper) 100%);
-  border: 1px solid var(--rule);
-  border-radius: 4px;
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 1px 2px rgba(20, 38, 29, 0.06),
-    0 12px 28px -18px rgba(20, 38, 29, 0.35);
+  background: var(--color-panel);
+  border: 1px solid var(--color-line);
+  border-radius: 2px;
 }
 
-/* Scorecard perforation down the left edge */
-.perforated {
+/* Panel with the accent hairline down the left — the "live feed" marker. */
+.feed {
   position: relative;
-  padding-left: 1.35rem;
+  padding-left: 0.9rem;
 }
-.perforated::before {
+.feed::before {
   content: "";
   position: absolute;
-  left: 0.55rem;
-  top: 0.75rem;
-  bottom: 0.75rem;
-  width: 3px;
-  background-image: radial-gradient(circle, var(--rule-strong) 1.4px, transparent 1.5px);
-  background-size: 3px 9px;
+  left: 0; top: 0; bottom: 0;
+  width: 2px;
+  background: var(--color-acid);
 }
 
-/* The double rule you find on a printed card */
-.rule-double {
-  border-top: 1px solid var(--rule-strong);
-  box-shadow: 0 3px 0 -2px var(--rule);
-}
+/* --------------------------------------------------- THE LEADERBOARD ★ ---- */
 
-/* ------------------------------------------------ THE HONOURS BOARD ★ ---- */
-
-.board {
-  background:
-    linear-gradient(180deg, var(--color-green-lift) 0%, var(--color-green) 22%, var(--color-green-deep) 100%);
-  border-radius: 5px;
-  padding: 3px;
-  box-shadow:
-    0 0 0 1px rgba(6, 37, 26, 0.9),
-    0 18px 40px -22px rgba(6, 37, 26, 0.85),
-    0 2px 0 rgba(255, 255, 255, 0.14) inset;
-  position: relative;
-  overflow: hidden;
-}
-.board::after {
-  /* varnish sheen across the top-left, like a painted board under clubhouse light */
-  content: "";
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background: linear-gradient(146deg, rgba(255, 255, 255, 0.09) 0%, transparent 38%);
-}
-.board-in {
-  border: 1px solid var(--brass-rule);
-  border-radius: 3px;
-  padding: clamp(1rem, 3.5vw, 1.75rem);
-}
+.board { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: 2px; }
+.board-in { padding: 0; }
 
 .board-row {
   display: grid;
-  grid-template-columns: 2.25rem 1fr auto;
-  align-items: baseline;
-  gap: 0.75rem;
-  padding: 0.7rem 0;
-  border-bottom: 1px solid rgba(192, 154, 62, 0.18);
-  color: #eae3cf;
+  grid-template-columns: 2.5rem 1fr auto;
+  align-items: center;
+  gap: 0.85rem;
+  padding: 0.8rem 1rem;
+  border-bottom: 1px solid var(--line-soft);
+  position: relative;
 }
 .board-row:last-child { border-bottom: 0; }
-.board-row .nm {
-  font-family: var(--font-display), Georgia, serif;
-  font-variation-settings: "SOFT" 0, "WONK" 0, "opsz" 24;
-  font-weight: 500;
-  font-size: 1.075rem;
-  letter-spacing: 0.004em;
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.55);
-}
-.board-row.lead { color: var(--color-brass-lift); }
-.board-row.lead .nm {
-  text-shadow: 0 1px 0 rgba(0, 0, 0, 0.6), 0 0 22px rgba(224, 194, 116, 0.28);
-}
+
 .board-row .pos {
-  font-family: var(--font-mono), monospace;
-  font-size: 0.8125rem;
-  color: rgba(192, 154, 62, 0.85);
   font-variant-numeric: tabular-nums;
+  font-variation-settings: "wdth" 80;
+  font-weight: 700;
+  font-size: 0.9rem;
+  color: var(--color-dim);
+}
+.board-row .nm {
+  font-family: var(--font-display), sans-serif;
+  font-variation-settings: "wdth" 88;
+  font-weight: 650;
+  text-transform: uppercase;
+  font-size: 1.02rem;
+  letter-spacing: 0.006em;
+  color: var(--color-text);
 }
 .board-row .pts {
-  font-family: var(--font-mono), monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 1.2rem;
-  font-weight: 500;
+  font-variation-settings: "wdth" 82;
+  font-weight: 800;
+  font-size: 1.65rem;
+  line-height: 1;
   letter-spacing: -0.035em;
 }
 
-/* ------------------------------------------------------------ controls -- */
+/* Leader gets the accent and a lit left edge. */
+.board-row.lead {
+  background: linear-gradient(90deg, rgba(200, 255, 60, 0.09), transparent 55%);
+}
+.board-row.lead::before {
+  content: "";
+  position: absolute;
+  left: 0; top: 0; bottom: 0;
+  width: 3px;
+  background: var(--color-acid);
+}
+.board-row.lead .nm,
+.board-row.lead .pts,
+.board-row.lead .pos { color: var(--color-acid); }
+
+/* Still out on the course — present but receded. */
+.board-row.out .nm { color: var(--color-dim); }
+.board-row.out .pts { color: var(--color-line); }
+
+/* ------------------------------------------------------------- controls -- */
 
 .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 0.5rem;
-  min-height: 2.875rem;
-  padding: 0 1.15rem;
-  border-radius: 3px;
-  font-weight: 600;
-  font-size: 0.9375rem;
-  letter-spacing: 0.005em;
+  min-height: 3rem;
+  padding: 0 1.25rem;
+  border-radius: 2px;
+  font-family: var(--font-display), sans-serif;
+  font-variation-settings: "wdth" 88;
+  font-weight: 700;
+  font-size: 0.875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
   border: 1px solid transparent;
   cursor: pointer;
-  transition: transform 0.12s cubic-bezier(0.2, 0.8, 0.3, 1), box-shadow 0.18s, background 0.18s;
+  transition: background 0.15s, border-color 0.15s, transform 0.1s;
 }
 .btn:active { transform: translateY(1px); }
 
-.btn-primary {
-  background: linear-gradient(180deg, var(--color-green-lift), var(--color-green));
-  color: #f4efdf;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.16) inset, 0 8px 18px -12px rgba(6, 37, 26, 0.9);
-}
-.btn-primary:hover { background: linear-gradient(180deg, #1a6349, var(--color-green-lift)); }
+.btn-primary { background: var(--color-acid); color: #06080a; }
+.btn-primary:hover { background: #d9ff70; }
 
-.btn-brass {
-  background: linear-gradient(180deg, var(--color-brass-lift), var(--color-brass));
-  color: var(--color-green-deep);
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.4) inset, 0 8px 18px -12px rgba(120, 92, 20, 0.7);
-}
-
-.btn-ghost {
-  background: transparent;
-  border-color: var(--rule-strong);
-  color: var(--color-ink);
-}
-.btn-ghost:hover { background: rgba(20, 38, 29, 0.045); }
+.btn-ghost { background: transparent; border-color: var(--color-line); color: var(--color-text); }
+.btn-ghost:hover { background: var(--color-panel-2); border-color: #36424b; }
 
 .field {
   width: 100%;
-  min-height: 2.875rem;
-  padding: 0 0.85rem;
-  background: #fffdf7;
-  border: 1px solid var(--rule-strong);
-  border-radius: 3px;
-  color: var(--color-ink);
+  min-height: 3rem;
+  padding: 0 0.9rem;
+  background: var(--color-panel-2);
+  border: 1px solid var(--color-line);
+  border-radius: 2px;
+  color: var(--color-text);
   font: inherit;
 }
 .field:focus {
   outline: none;
-  border-color: var(--color-green);
-  box-shadow: 0 0 0 3px rgba(11, 61, 44, 0.13);
+  border-color: var(--color-acid);
+  box-shadow: 0 0 0 3px rgba(200, 255, 60, 0.16);
 }
 
-/* Big thumbable score box — used on the first tee, in the wind, one-handed */
+/* Big thumbable stroke box — used one-handed, in wind, on a fairway. */
 .score-input {
-  width: 4.25rem;
-  height: 3.25rem;
+  width: 4.5rem;
+  height: 3.5rem;
   text-align: center;
-  font-family: var(--font-mono), monospace;
   font-variant-numeric: tabular-nums;
-  font-size: 1.35rem;
-  font-weight: 500;
-  background: #fffdf7;
-  border: 1.5px solid var(--rule-strong);
-  border-radius: 3px;
-  color: var(--color-ink);
+  font-variation-settings: "wdth" 82;
+  font-size: 1.5rem;
+  font-weight: 800;
+  background: var(--color-panel-2);
+  border: 1.5px solid var(--color-line);
+  border-radius: 2px;
+  color: var(--color-text);
 }
 .score-input:focus {
   outline: none;
-  border-color: var(--color-brass);
-  box-shadow: 0 0 0 3px rgba(192, 154, 62, 0.22);
+  border-color: var(--color-acid);
+  box-shadow: 0 0 0 3px rgba(200, 255, 60, 0.18);
 }
-/* no spinners — they're useless with a thumb */
 .score-input::-webkit-outer-spin-button,
 .score-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
 .score-input { -moz-appearance: textfield; }
 
+/* Stepper buttons either side of a stroke count — the primary on-course control */
+.step {
+  width: 3.5rem;
+  height: 3.5rem;
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-line);
+  background: var(--color-panel-2);
+  border-radius: 2px;
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--color-text);
+  cursor: pointer;
+  user-select: none;
+}
+.step:active { background: var(--color-acid); color: #06080a; }
+
 .chip {
   display: inline-flex;
   align-items: center;
-  gap: 0.35rem;
-  padding: 0.2rem 0.55rem;
+  gap: 0.4rem;
+  padding: 0.28rem 0.6rem;
   border-radius: 2px;
-  font-size: 0.72rem;
-  font-weight: 600;
-  letter-spacing: 0.06em;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  border: 1px solid var(--rule-strong);
-  color: var(--color-ink-soft);
+  border: 1px solid var(--color-line);
+  color: var(--color-dim);
 }
 .chip-live {
-  border-color: rgba(168, 50, 42, 0.4);
-  color: var(--color-flag);
-  background: rgba(168, 50, 42, 0.07);
+  border-color: rgba(255, 68, 56, 0.45);
+  color: var(--color-live);
+  background: rgba(255, 68, 56, 0.1);
+}
+.chip-acid {
+  border-color: rgba(200, 255, 60, 0.4);
+  color: var(--color-acid);
+  background: rgba(200, 255, 60, 0.08);
 }
 
 .pulse {
   width: 6px; height: 6px; border-radius: 50%;
-  background: var(--color-flag);
-  animation: pulse 2s ease-in-out infinite;
+  background: var(--color-live);
+  animation: pulse 1.8s ease-in-out infinite;
 }
 @keyframes pulse {
-  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(168, 50, 42, 0.5); }
-  50%      { opacity: 0.55; box-shadow: 0 0 0 5px rgba(168, 50, 42, 0); }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(255, 68, 56, 0.55); }
+  55%      { opacity: 0.5; box-shadow: 0 0 0 6px rgba(255, 68, 56, 0); }
 }
+
+/* Hole-by-hole strip: one cell per hole, coloured by how it went. */
+.holes { display: grid; grid-template-columns: repeat(18, minmax(0, 1fr)); gap: 2px; }
+.hole-cell {
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  font-size: 0.62rem;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+  background: var(--color-panel-2);
+  color: var(--color-dim);
+  border-radius: 1px;
+}
+.hole-cell.played { background: #1d2a17; color: var(--color-acid); }
+.hole-cell.blank  { background: var(--color-panel-2); color: #3a444c; }
 
 /* -------------------------------------------------------------- motion -- */
 
 @keyframes rise {
-  from { opacity: 0; transform: translateY(9px); }
+  from { opacity: 0; transform: translateY(7px); }
   to   { opacity: 1; transform: none; }
 }
-.rise { animation: rise 0.55s cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+.rise { animation: rise 0.4s cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+
+/* A score that just changed flashes the accent, like a live scoreboard */
+@keyframes flash {
+  0%   { background: rgba(200, 255, 60, 0.25); }
+  100% { background: transparent; }
+}
+.flash { animation: flash 0.9s ease-out both; }
 
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {

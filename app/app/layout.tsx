@@ -1,39 +1,39 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Figtree, IBM_Plex_Mono } from "next/font/google";
+import { Archivo, Azeret_Mono } from "next/font/google";
 import "./globals.css";
 
-const fraunces = Fraunces({
-  variable: "--font-fraunces",
+/**
+ * One family doing all the work, using its width axis: condensed and heavy for
+ * headlines and scores, near-normal for body. That width shift is what makes
+ * broadcast sports graphics feel like a system rather than a pile of fonts.
+ */
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
-  axes: ["SOFT", "WONK", "opsz"],
+  axes: ["wdth"],
 });
 
-const figtree = Figtree({
-  variable: "--font-figtree",
+const monoTech = Azeret_Mono({
+  variable: "--font-mono-tech",
   subsets: ["latin"],
-});
-
-const plexMono = IBM_Plex_Mono({
-  variable: "--font-plex-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500", "700"],
 });
 
 export const metadata: Metadata = {
   title: "Societee — run your golf society without the spreadsheets",
   description:
-    "Create a society, add your players, run the day. Live leaderboard on a QR code — no app download and no sign-up for anyone but you.",
+    "Live hole-by-hole scoring, a leaderboard on a QR code, and no sign-up for anyone but you.",
 };
 
 export const viewport: Viewport = {
-  themeColor: "#0b3d2c",
+  themeColor: "#06080a",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html
       lang="en-GB"
-      className={`${fraunces.variable} ${figtree.variable} ${plexMono.variable} h-full antialiased`}
+      className={`${archivo.variable} ${monoTech.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">{children}</body>
     </html>

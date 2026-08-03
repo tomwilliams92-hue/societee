@@ -5,6 +5,15 @@ export type EventStatus = "draft" | "live" | "complete" | "cancelled";
 export type ScoringFormat = "stableford" | "medal" | "par_bogey" | "gross";
 export type RoundSource = "manual" | "live_scoring" | "whs_import" | "csv_import";
 
+/** One hole on a real, published scorecard. */
+export type HoleInfo = {
+  hole: number;
+  par: number;
+  /** Stroke index 1–18. Decides who gets a shot where — wrong SI, wrong points. */
+  strokeIndex: number;
+  yards?: number;
+};
+
 export type Tee = {
   id: string;
   courseId: string;
@@ -14,6 +23,31 @@ export type Tee = {
   /** Slope Rating, 55–155 */
   slope: number;
   par: number;
+  /**
+   * The real card. ABSENT until someone enters verified data for this tee.
+   * Hole-by-hole scoring is switched off without it — a guessed stroke index
+   * produces confidently wrong Stableford points, which is worse than no
+   * feature at all. Entering a gross total never needs this.
+   */
+  card?: HoleInfo[];
+};
+
+/** A fourball (or three, or two). One phone in the group does the scoring. */
+export type EventGroup = {
+  id: string;
+  eventId: string;
+  groupNo: number;
+  /** Which hole this group teed off from — two-tee starts are per group. */
+  startHole: number;
+  /** Secret in the group's scoring link. No account, but not guessable. */
+  scorerToken: string;
+};
+
+export type HoleScore = {
+  roundId: string;
+  hole: number;
+  strokes: number | null;
+  points: number | null;
 };
 
 /**

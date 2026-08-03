@@ -1,41 +1,72 @@
 /* ---------------------------------------------------------------------------
  * Course seed data — a handful of North Wales / Wirral clubs to build against.
  *
- * CR / Slope / Par are real published course ratings. Every course a society
- * plays needs a row here before its rounds can be scored, so this table grows
- * into a proper course database over time.
+ * CR / Slope / Par are real published course ratings, and `country` decides
+ * which Playing Handicap allowances an organiser may choose (England is fixed
+ * at 95% until 2028; Wales, Scotland and Ireland allow 85–100% from Apr 2026).
  *
- * ⚠️  The per-hole `par` / `strokeIndex` arrays below are PLACEHOLDERS. They
- * are a plausible standard layout, NOT the real cards. Live hole-by-hole
- * scoring will produce wrong points until each course's real scorecard is
- * entered. Everything that works off adjusted gross (the import path, and
- * summary score entry) is unaffected and correct today.
+ * ── ON SCORECARDS ─────────────────────────────────────────────────────────
+ * A tee gets a `card` ONLY when someone has entered the real published par and
+ * stroke index for all 18 holes. There is deliberately no fallback and no
+ * "standard layout" guess: the stroke index decides which holes a player gets a
+ * shot on, so an invented one produces Stableford points that look right and
+ * are wrong. Without a card, hole-by-hole scoring is refused and the organiser
+ * enters a gross total instead — which needs no card and is always correct.
  * ------------------------------------------------------------------------- */
 
-import type { Course } from "./types";
+import type { Course, HoleInfo, Tee } from "./types";
 
-type HoleSeed = { par: number; strokeIndex: number };
-
-/** PLACEHOLDER card — see warning above. Par 72, standard SI distribution. */
-const STANDARD_72: HoleSeed[] = [
-  { par: 4, strokeIndex: 5 },  { par: 4, strokeIndex: 11 }, { par: 3, strokeIndex: 17 },
-  { par: 5, strokeIndex: 1 },  { par: 4, strokeIndex: 7 },  { par: 4, strokeIndex: 13 },
-  { par: 3, strokeIndex: 15 }, { par: 4, strokeIndex: 3 },  { par: 5, strokeIndex: 9 },
-  { par: 4, strokeIndex: 6 },  { par: 4, strokeIndex: 2 },  { par: 3, strokeIndex: 18 },
-  { par: 5, strokeIndex: 10 }, { par: 4, strokeIndex: 4 },  { par: 4, strokeIndex: 14 },
-  { par: 3, strokeIndex: 16 }, { par: 4, strokeIndex: 8 },  { par: 5, strokeIndex: 12 },
-];
-
-/** PLACEHOLDER card — par 69 variant (one par 5 and one par 4 become par 3s). */
-const STANDARD_69: HoleSeed[] = STANDARD_72.map((h, i) =>
-  i === 8 ? { ...h, par: 4 } : i === 17 ? { ...h, par: 4 } : i === 10 ? { ...h, par: 3 } : h
-);
-
-export const HOLE_CARDS: Record<number, HoleSeed[]> = { 72: STANDARD_72, 69: STANDARD_69 };
-
-export function holeCard(par: number): HoleSeed[] {
-  return HOLE_CARDS[par] ?? STANDARD_72;
+/** Build a card from [par, strokeIndex] pairs, validating as we go. */
+export function makeCard(pairs: [number, number][], expectedPar: number): HoleInfo[] {
+  if (pairs.length !== 18) throw new Error(`card needs 18 holes, got ${pairs.length}`);
+  const sis = pairs.map(([, si]) => si).sort((a, b) => a - b);
+  const ok = sis.every((si, i) => si === i + 1);
+  if (!ok) throw new Error("stroke indexes must be 1–18 with no repeats");
+  const par = pairs.reduce((a, [p]) => a + p, 0);
+  if (par !== expectedPar) throw new Error(`pars sum to ${par}, expected ${expectedPar}`);
+  return pairs.map(([par, strokeIndex], i) => ({ hole: i + 1, par, strokeIndex }));
 }
+
+/* ---------------------------------------------------------------------------
+ * Real cards, taken from each club's own website on 3 Aug 2026 and validated
+ * both by the source and again by makeCard() at load: stroke indexes 1–18 with
+ * no repeats, pars summing to the course par.
+ *
+ * Conwy, St Melyd, Abergele, Bromborough and Wallasey all publish ONE men's
+ * stroke index shared across their tee sets — only the yardages differ — so the
+ * same card is correct for every men's tee at a course. The ladies' cards have
+ * their own par and their own SI and are NOT represented here yet.
+ * ------------------------------------------------------------------------- */
+
+// conwygolfclub.com/the-course/course-overview
+const CONWY = makeCard([
+  [4, 13], [3, 15], [4, 9], [4, 5], [4, 1], [3, 17], [4, 7], [4, 3], [5, 11],
+  [5, 10], [4, 4], [5, 6], [3, 12], [5, 16], [3, 18], [4, 8], [4, 2], [4, 14],
+], 72);
+
+// stmelydgolf.co.uk/course — 9 greens played twice, hence evens out / odds back
+const ST_MELYD = makeCard([
+  [5, 12], [4, 4], [4, 14], [3, 16], [4, 2], [3, 8], [5, 6], [3, 18], [4, 10],
+  [4, 3], [4, 5], [4, 13], [3, 17], [4, 1], [3, 7], [5, 11], [3, 15], [4, 9],
+], 69);
+
+// abergelegolfclub.co.uk — official 2022 scorecard PDF
+const ABERGELE = makeCard([
+  [4, 14], [3, 16], [5, 6], [4, 18], [3, 12], [4, 2], [4, 10], [5, 4], [4, 8],
+  [4, 9], [5, 15], [4, 1], [3, 13], [4, 5], [4, 17], [4, 3], [3, 11], [5, 7],
+], 72);
+
+// bromboroughgolfclub.org.uk/course/scorecard — men's column
+const BROMBOROUGH = makeCard([
+  [4, 13], [4, 5], [5, 7], [3, 17], [4, 1], [3, 15], [5, 9], [4, 11], [4, 3],
+  [3, 16], [5, 4], [4, 12], [4, 14], [4, 8], [4, 2], [3, 18], [5, 10], [4, 6],
+], 72);
+
+// wallasey.intelligentgolf.co.uk/scorecard
+const WALLASEY = makeCard([
+  [4, 11], [4, 5], [4, 7], [5, 1], [3, 15], [4, 13], [5, 3], [4, 9], [3, 17],
+  [4, 12], [4, 8], [3, 18], [5, 2], [5, 16], [4, 6], [3, 14], [4, 4], [4, 10],
+], 72);
 
 export const COURSES: Course[] = [
   {
@@ -45,8 +76,8 @@ export const COURSES: Course[] = [
     county: "Conwy",
     country: "Wales",
     tees: [
-      { id: "conwy-blue",  courseId: "conwy", name: "Blue",  cr: 74.5, slope: 138, par: 72 },
-      { id: "conwy-white", courseId: "conwy", name: "White", cr: 71.9, slope: 121, par: 72 },
+      { id: "conwy-blue",  courseId: "conwy", name: "Blue",  cr: 74.5, slope: 138, par: 72, card: CONWY },
+      { id: "conwy-white", courseId: "conwy", name: "White", cr: 71.9, slope: 121, par: 72, card: CONWY },
     ],
   },
   {
@@ -55,7 +86,7 @@ export const COURSES: Course[] = [
     clubName: "Bromborough Golf Club",
     county: "Wirral",
     country: "England",
-    tees: [{ id: "bromborough-white", courseId: "bromborough", name: "White", cr: 72.9, slope: 142, par: 72 }],
+    tees: [{ id: "bromborough-white", courseId: "bromborough", name: "White", cr: 72.9, slope: 142, par: 72, card: BROMBOROUGH }],
   },
   {
     id: "wallasey",
@@ -63,7 +94,7 @@ export const COURSES: Course[] = [
     clubName: "Wallasey Golf Club",
     county: "Wirral",
     country: "England",
-    tees: [{ id: "wallasey-white", courseId: "wallasey", name: "White", cr: 73.0, slope: 133, par: 72 }],
+    tees: [{ id: "wallasey-white", courseId: "wallasey", name: "White", cr: 73.0, slope: 133, par: 72, card: WALLASEY }],
   },
   {
     id: "stmelyd",
@@ -71,7 +102,7 @@ export const COURSES: Course[] = [
     clubName: "St Melyd Golf Club",
     county: "Denbighshire",
     country: "Wales",
-    tees: [{ id: "stmelyd-white", courseId: "stmelyd", name: "White", cr: 68.4, slope: 120, par: 69 }],
+    tees: [{ id: "stmelyd-white", courseId: "stmelyd", name: "White", cr: 68.4, slope: 120, par: 69, card: ST_MELYD }],
   },
   {
     id: "abergele",
@@ -79,12 +110,18 @@ export const COURSES: Course[] = [
     clubName: "Abergele Golf Club",
     county: "Conwy",
     country: "Wales",
-    tees: [{ id: "abergele-white", courseId: "abergele", name: "White", cr: 71.8, slope: 124, par: 72 }],
+    tees: [{ id: "abergele-white", courseId: "abergele", name: "White", cr: 71.8, slope: 124, par: 72, card: ABERGELE }],
   },
 ];
 
 export const courseById = (id?: string) => COURSES.find((c) => c.id === id);
-export const teeById = (id?: string) =>
+export const teeById = (id?: string): Tee | undefined =>
   COURSES.flatMap((c) => c.tees).find((t) => t.id === id);
 export const courseOfTee = (teeId?: string) =>
   COURSES.find((c) => c.tees.some((t) => t.id === teeId));
+
+/** Can this tee be scored hole by hole yet? */
+export const hasCard = (teeId?: string) => (teeById(teeId)?.card?.length ?? 0) === 18;
+
+export const holeInfo = (teeId: string | undefined, hole: number): HoleInfo | undefined =>
+  teeById(teeId)?.card?.find((h) => h.hole === hole);

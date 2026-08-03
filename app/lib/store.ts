@@ -13,12 +13,13 @@
  * fictional scores. It exists to make the product demonstrable, nothing more.
  * ------------------------------------------------------------------------- */
 
-import { useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import type {
-  EventEntry, GolfEvent, Player, Round, Season, SideComp, Society,
+  EventEntry, EventGroup, GolfEvent, HoleInfo, HoleScore, Player, Round, Season,
+  SideComp, Society,
 } from "./types";
 import { teeById } from "./courses";
-import { courseHandicap, playingHandicap } from "./scoring";
+import { courseHandicap, holePoints, playingHandicap } from "./scoring";
 
 const KEY = "societee.v1";
 
@@ -27,10 +28,30 @@ export type DB = {
   players: Player[];
   seasons: Season[];
   events: GolfEvent[];
+  groups: EventGroup[];
   entries: EventEntry[];
   rounds: Round[];
+  holeScores: HoleScore[];
   sideComps: SideComp[];
+  /**
+   * Scorecards typed in by organisers, keyed by tee id. Merged over the static
+   * list in lib/courses.ts. This is how the course database actually fills up:
+   * the person standing on the first tee with the card in their hand is the
+   * only one who reliably has this data, so let them enter it once and it's
+   * there for every society that plays the course after them.
+   */
+  cards: Record<string, HoleInfo[]>;
 };
+
+/** Older saved state won't have the newer collections. Don't crash on it. */
+function migrate(db: Partial<DB>): DB {
+  return {
+    societies: db.societies ?? [], players: db.players ?? [], seasons: db.seasons ?? [],
+    events: db.events ?? [], groups: db.groups ?? [], entries: db.entries ?? [],
+    rounds: db.rounds ?? [], holeScores: db.holeScores ?? [], sideComps: db.sideComps ?? [],
+    cards: db.cards ?? {},
+  };
+}
 
 /* ---------------------------------------------------------------- seeding -- */
 
@@ -75,7 +96,10 @@ const SWINDLE = [
 ] as const;
 
 function seed(): DB {
-  const db: DB = { societies: [], players: [], seasons: [], events: [], entries: [], rounds: [], sideComps: [] };
+  const db: DB = {
+    societies: [], players: [], seasons: [], events: [], groups: [],
+    entries: [], rounds: [], holeScores: [], sideComps: [], cards: {},
+  };
 
   /* ---------- Society 1: a season-long Order of Merit across the summer ---- */
   const wanderers: Society = {
@@ -125,6 +149,14 @@ function seed(): DB {
   };
   db.events.push(ev);
 
+  // Three fourballs, two-tee start. Each gets its own scoring link.
+  [1, 2, 3].forEach((n) => {
+    db.groups.push({
+      id: id("grp"), eventId: ev.id, groupNo: n,
+      startHole: n === 3 ? 10 : 1, scorerToken: token(6),
+    });
+  });
+
   const played = [38, 36, 35, 34, 33, 31, 30, 28, null, null, null, null];
   SWINDLE.forEach(([name, hcp], i) => {
     const pid = id("plr");
@@ -169,7 +201,15 @@ function read(): DB {
   if (typeof window === "undefined") return (cache = seed());
   try {
     const raw = window.localStorage.getItem(KEY);
-    cache = raw ? (JSON.parse(raw) as DB) : seed();
+    if (raw) {
+      cache = migrate(JSON.parse(raw) as Partial<DB>);
+    } else {
+      // Persist the seed immediately. Share and scoring tokens are random, so
+      // re-seeding on the next page load would silently invalidate every link
+      // already handed out.
+      cache = seed();
+      window.localStorage.setItem(KEY, JSON.stringify(cache));
+    }
   } catch {
     cache = seed();
   }
@@ -182,12 +222,27 @@ function commit(next: DB) {
   listeners.forEach((l) => l());
 }
 
+const EMPTY: DB = migrate({});
+
+/**
+ * The store lives in localStorage, so the server has nothing to render from.
+ * Server render and the FIRST client render must both use the same empty state
+ * or React throws a hydration mismatch; real data swaps in on mount. Pair with
+ * useReady() to show a placeholder rather than an empty-state flash.
+ */
 export function useDB(): DB {
-  return useSyncExternalStore(
+  const db = useSyncExternalStore(
     (l) => { listeners.add(l); return () => { listeners.delete(l); }; },
     read,
-    () => read()
+    () => EMPTY
   );
+  return useReady() ? db : EMPTY;
+}
+
+export function useReady(): boolean {
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+  return mounted;
 }
 
 export function update(fn: (db: DB) => DB | void) {
@@ -251,8 +306,68 @@ export const actions = {
           groupNo: Math.floor(i / 4) + 1, startHole: 1,
         });
       });
+      // One fourball per four players, each with its own scoring link.
+      const groupCount = Math.max(1, Math.ceil(input.playerIds.length / 4));
+      for (let n = 1; n <= groupCount; n++) {
+        db.groups.push({
+          id: id("grp"), eventId: ev.id, groupNo: n, startHole: 1, scorerToken: token(6),
+        });
+      }
     });
     return ev;
+  },
+
+  /* ------------------------------------------------------- live scoring -- */
+
+  /**
+   * Record one player's strokes on one hole, from a group's scoring link.
+   *
+   * The round's running Stableford and gross are recomputed from every hole
+   * entered so far, so a corrected hole immediately corrects the total. Points
+   * come from the tee's REAL card — callers must check hasCard() first; without
+   * one there is no honest answer and this does nothing.
+   */
+  setHoleScore(eventId: string, playerId: string, hole: number, strokes: number | null) {
+    update((db) => {
+      const ev = db.events.find((e) => e.id === eventId);
+      const tee = teeById(ev?.teeId);
+      const card = tee?.card;
+      if (!ev || !tee || !card) return;
+
+      const entry = db.entries.find((e) => e.eventId === eventId && e.playerId === playerId);
+      const player = db.players.find((p) => p.id === playerId);
+      if (!entry || !player) return;
+      const ph = entry.playingHandicap ??
+        (player.handicapIndex == null ? 0
+          : playingHandicap(courseHandicap(player.handicapIndex, tee), ev.handicapAllowance));
+
+      let round = db.rounds.find((r) => r.eventId === eventId && r.playerId === playerId);
+      if (!round) {
+        round = {
+          id: id("rnd"), playerId, eventId, courseId: ev.courseId, teeId: ev.teeId,
+          playedOn: ev.playsOn, format: "stableford", gross: null, adjustedGross: null,
+          courseHandicap: ph, stableford: null, net: null,
+          source: "live_scoring", verified: false,
+        };
+        db.rounds.push(round);
+      }
+
+      const info = card.find((h) => h.hole === hole);
+      db.holeScores = db.holeScores.filter((h) => !(h.roundId === round!.id && h.hole === hole));
+      if (strokes != null && strokes > 0 && info) {
+        db.holeScores.push({
+          roundId: round.id, hole, strokes,
+          points: holePoints(strokes, info.par, info.strokeIndex, ph),
+        });
+      }
+
+      const mine = db.holeScores.filter((h) => h.roundId === round!.id);
+      round.gross = mine.length ? mine.reduce((a, h) => a + (h.strokes ?? 0), 0) : null;
+      round.adjustedGross = round.gross;
+      round.stableford = mine.length ? mine.reduce((a, h) => a + (h.points ?? 0), 0) : null;
+      round.courseHandicap = ph;
+      round.net = round.gross == null ? null : round.gross - ph;
+    });
   },
 
   /**
@@ -328,10 +443,53 @@ export const actions = {
 
   deleteEvent(eventId: string) {
     update((db) => {
+      const roundIds = new Set(db.rounds.filter((r) => r.eventId === eventId).map((r) => r.id));
       db.events = db.events.filter((e) => e.id !== eventId);
+      db.groups = db.groups.filter((g) => g.eventId !== eventId);
       db.entries = db.entries.filter((e) => e.eventId !== eventId);
       db.rounds = db.rounds.filter((r) => r.eventId !== eventId);
+      db.holeScores = db.holeScores.filter((h) => !roundIds.has(h.roundId));
       db.sideComps = db.sideComps.filter((s) => s.eventId !== eventId);
+    });
+  },
+
+  /** Move a player into another fourball. */
+  setGroup(eventId: string, playerId: string, groupNo: number) {
+    update((db) => {
+      const e = db.entries.find((x) => x.eventId === eventId && x.playerId === playerId);
+      if (e) e.groupNo = groupNo;
+    });
+  },
+
+  /**
+   * Save a scorecard an organiser has typed in.
+   *
+   * Validated hard, because this is the data every hole-by-hole point depends
+   * on: 18 holes, stroke indexes exactly 1–18 with no repeats, pars in range.
+   * Returns an error string rather than saving something unusable.
+   */
+  saveCard(teeId: string, holes: HoleInfo[]): string | null {
+    if (holes.length !== 18) return "Needs all 18 holes.";
+    if (holes.some((h) => h.par < 3 || h.par > 6)) return "Pars should be between 3 and 6.";
+    const sis = holes.map((h) => h.strokeIndex).sort((a, b) => a - b);
+    if (!sis.every((si, i) => si === i + 1)) {
+      const dupes = sis.filter((si, i) => sis[i + 1] === si);
+      return dupes.length
+        ? `Stroke index ${dupes[0]} is used twice — each of 1 to 18 must appear once.`
+        : "Stroke indexes must be 1 to 18, each used once.";
+    }
+    const tee = teeById(teeId);
+    const par = holes.reduce((a, h) => a + h.par, 0);
+    if (tee && par !== tee.par) return `Pars add up to ${par}, but ${tee.name} is par ${tee.par}.`;
+
+    update((db) => { db.cards[teeId] = holes; });
+    return null;
+  },
+
+  setGroupStartHole(eventId: string, groupNo: number, startHole: number) {
+    update((db) => {
+      const g = db.groups.find((x) => x.eventId === eventId && x.groupNo === groupNo);
+      if (g) g.startHole = startHole;
     });
   },
 };
@@ -352,4 +510,34 @@ export const select = {
   currentSeason: (db: DB, societyId: string) =>
     db.seasons.find((s) => s.societyId === societyId && s.isCurrent),
   sideComps: (db: DB, eventId: string) => db.sideComps.filter((s) => s.eventId === eventId),
+
+  /**
+   * The scorecard in force for a tee: an organiser-entered one wins over the
+   * built-in list. Undefined means nobody has entered one, and hole-by-hole
+   * scoring must stay switched off rather than guess a stroke index.
+   */
+  card: (db: DB, teeId?: string): HoleInfo[] | undefined => {
+    if (!teeId) return undefined;
+    const entered = db.cards[teeId];
+    return entered?.length === 18 ? entered : teeById(teeId)?.card;
+  },
+  hasCard: (db: DB, teeId?: string) => (select.card(db, teeId)?.length ?? 0) === 18,
+
+  groups: (db: DB, eventId: string) =>
+    db.groups.filter((g) => g.eventId === eventId).sort((a, b) => a.groupNo - b.groupNo),
+  groupByToken: (db: DB, t: string) => db.groups.find((g) => g.scorerToken === t),
+
+  /** Everyone in a fourball, in the order they appear on the card. */
+  groupPlayers: (db: DB, eventId: string, groupNo: number) =>
+    db.entries
+      .filter((e) => e.eventId === eventId && e.groupNo === groupNo)
+      .map((e) => ({ entry: e, player: db.players.find((p) => p.id === e.playerId)! }))
+      .filter((x) => x.player),
+
+  /** Hole-by-hole entries for one player in one event. */
+  holesFor: (db: DB, eventId: string, playerId: string) => {
+    const round = db.rounds.find((r) => r.eventId === eventId && r.playerId === playerId);
+    if (!round) return [];
+    return db.holeScores.filter((h) => h.roundId === round.id);
+  },
 };

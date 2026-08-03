@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Header, Footer, SectionTitle } from "@/components/Chrome";
-import { HonoursBoard, type BoardRow } from "@/components/HonoursBoard";
+import { Leaderboard, type BoardRow } from "@/components/Leaderboard";
 import { useDB, select, actions } from "@/lib/store";
 import { allowancesFor, bestNTotal, formatHandicap, parseHandicap, rank } from "@/lib/scoring";
 import { COURSES, courseById, courseOfTee } from "@/lib/courses";
@@ -18,8 +18,8 @@ export function SocietyView({ slug }: { slug: string }) {
       <>
         <Header />
         <main className="mx-auto max-w-5xl flex-1 px-4 py-24 text-center">
-          <h1 className="engraved text-2xl">No such society</h1>
-          <p className="mt-3 text-[var(--color-ink-soft)]">
+          <h1 className="name text-2xl">No such society</h1>
+          <p className="mt-3 text-[var(--color-dim)]">
             Nothing here under “{slug}”.{" "}
             <Link href="/" className="underline underline-offset-4">Back to your societies</Link>.
           </p>
@@ -71,7 +71,7 @@ export function SocietyView({ slug }: { slug: string }) {
           <p className="label">{society.homeClub ?? "Society"}</p>
           <h1 className="display mt-2 text-[clamp(2.2rem,7vw,3.4rem)]">{society.name}</h1>
           {season && (
-            <p className="mt-3 text-[var(--color-ink-soft)]">
+            <p className="mt-3 text-[var(--color-dim)]">
               {season.name} · best {season.bestN ?? "all"} cards count ·{" "}
               {fmtRange(season.startsOn, season.endsOn)}
               {season.prize && <> · <span className="italic">{season.prize}</span></>}
@@ -79,15 +79,15 @@ export function SocietyView({ slug }: { slug: string }) {
           )}
         </section>
 
-        <nav className="mb-6 flex gap-1 border-b border-[var(--rule-strong)]">
+        <nav className="mb-6 flex gap-1 border-b border-[var(--color-line)]">
           {(["merit", "events", "players"] as const).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
               className="label relative -mb-px px-3.5 py-2.5"
               style={{
-                color: tab === t ? "var(--color-green)" : undefined,
-                borderBottom: `2px solid ${tab === t ? "var(--color-brass)" : "transparent"}`,
+                color: tab === t ? "var(--color-acid)" : undefined,
+                borderBottom: `2px solid ${tab === t ? "var(--color-acid)" : "transparent"}`,
               }}
             >
               {t === "merit" ? "Order of Merit" : t}
@@ -97,7 +97,7 @@ export function SocietyView({ slug }: { slug: string }) {
 
         {tab === "merit" &&
           (season ? (
-            <HonoursBoard
+            <Leaderboard
               title={season.name}
               subtitle={`Best ${season.bestN ?? "all"} Stableford cards · ${fmtRange(season.startsOn, season.endsOn)}`}
               rows={meritRows}
@@ -105,7 +105,7 @@ export function SocietyView({ slug }: { slug: string }) {
               empty="No cards in yet this season."
             />
           ) : (
-            <p className="card p-6 text-center text-[var(--color-ink-soft)]">
+            <p className="card p-6 text-center text-[var(--color-dim)]">
               No season running. An Order of Merit totals each player’s best cards across the summer.
             </p>
           ))}
@@ -226,7 +226,7 @@ export function SocietyView({ slug }: { slug: string }) {
 
         <div className="grid gap-3">
           {events.length === 0 && (
-            <p className="card p-6 text-center text-[var(--color-ink-soft)]">No golf days yet.</p>
+            <p className="card p-6 text-center text-[var(--color-dim)]">No golf days yet.</p>
           )}
           {events.map((ev) => {
             const course = courseById(ev.courseId);
@@ -239,12 +239,12 @@ export function SocietyView({ slug }: { slug: string }) {
                 className="card flex flex-wrap items-center gap-x-6 gap-y-2 p-4 transition-transform hover:-translate-y-0.5"
               >
                 <div className="min-w-0 flex-1">
-                  <h3 className="engraved text-[1.15rem] leading-tight">{ev.name}</h3>
+                  <h3 className="name text-[1.15rem] leading-tight">{ev.name}</h3>
                   <p className="label mt-1">
                     {fmtDate(ev.playsOn)} · {course?.name ?? "Course TBC"}
                   </p>
                 </div>
-                <span className="num text-[0.9rem] text-[var(--color-ink-soft)]">
+                <span className="num text-[0.9rem] text-[var(--color-dim)]">
                   {scored}/{entered} cards in
                 </span>
                 {ev.status === "live" && (
@@ -303,14 +303,14 @@ export function SocietyView({ slug }: { slug: string }) {
           </p>
         </form>
 
-        <div className="card divide-y divide-[var(--rule)]">
+        <div className="card divide-y divide-[var(--color-line)]">
           {players.map((p) => (
             <div key={p.id} className="flex items-center gap-4 px-4 py-3">
               <span className="flex-1 truncate">{p.name}</span>
               <label className="text-right">
                 <span className="label mr-2">Index</span>
                 <input
-                  className="num w-[5.5rem] rounded-[3px] border border-transparent bg-transparent px-2 py-1 text-right hover:border-[var(--rule-strong)] focus:border-[var(--color-green)] focus:bg-white focus:outline-none"
+                  className="num w-[5.5rem] rounded-[3px] border border-transparent bg-transparent px-2 py-1 text-right hover:border-[var(--color-line)] focus:border-[var(--color-acid)] focus:bg-white focus:outline-none"
                   defaultValue={formatHandicap(p.handicapIndex)}
                   aria-label={`Handicap index for ${p.name}`}
                   onBlur={(e) => {

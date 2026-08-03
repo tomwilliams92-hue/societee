@@ -11,7 +11,7 @@
  * Handicap convention throughout: PLUS GOLFERS ARE NEGATIVE (+1.6 => -1.6).
  * ------------------------------------------------------------------------- */
 
-import type { Tee, Union } from "./types";
+import type { HoleInfo, Tee, Union } from "./types";
 
 /**
  * Playing Handicap allowances an organiser may legally choose, by union.
@@ -133,6 +133,30 @@ export function holePoints(
   if (strokes == null || strokes <= 0) return null;
   const net = strokes - strokesOnHole(playingHcp, strokeIndex);
   return Math.max(0, par - net + 2);
+}
+
+/**
+ * Roll hole-by-hole entries into a live total.
+ *
+ * `thru` counts holes actually entered, and a leaderboard must always show it
+ * alongside a running total — 21 points through 12 beats 24 through 18 in every
+ * way that matters to someone watching, and a bare number hides that.
+ */
+export function liveTotals(
+  entered: { hole: number; strokes: number | null }[],
+  card: HoleInfo[],
+  playingHcp: number
+): { thru: number; points: number; strokes: number } {
+  let thru = 0, points = 0, strokes = 0;
+  for (const e of entered) {
+    if (e.strokes == null || e.strokes <= 0) continue;
+    const info = card.find((h) => h.hole === e.hole);
+    if (!info) continue;
+    thru += 1;
+    strokes += e.strokes;
+    points += holePoints(e.strokes, info.par, info.strokeIndex, playingHcp) ?? 0;
+  }
+  return { thru, points, strokes };
 }
 
 /**

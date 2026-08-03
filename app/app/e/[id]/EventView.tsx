@@ -5,7 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Header, Footer, SectionTitle } from "@/components/Chrome";
-import { HonoursBoard, type BoardRow } from "@/components/HonoursBoard";
+import { Leaderboard, type BoardRow } from "@/components/Leaderboard";
 import { useDB, select, actions } from "@/lib/store";
 import { formatPlayingHandicap, rank } from "@/lib/scoring";
 import { courseById, teeById } from "@/lib/courses";
@@ -23,7 +23,7 @@ export function EventView({ eventId }: { eventId: string }) {
       <>
         <Header />
         <main className="mx-auto max-w-5xl flex-1 px-4 py-24 text-center">
-          <h1 className="engraved text-2xl">No such golf day</h1>
+          <h1 className="name text-2xl">No such golf day</h1>
           <Link href="/" className="mt-3 inline-block underline underline-offset-4">
             Back to your societies
           </Link>
@@ -61,6 +61,8 @@ export function EventView({ eventId }: { eventId: string }) {
   }));
 
   const cardsIn = rounds.length;
+  const groups = select.groups(db, ev.id);
+  const byHole = select.hasCard(db, ev.teeId);
   const notPlaying = select
     .players(db, ev.societyId)
     .filter((p) => !entries.some((en) => en.playerId === p.id));
@@ -78,12 +80,12 @@ export function EventView({ eventId }: { eventId: string }) {
             )}
           </div>
           <h1 className="display mt-2 text-[clamp(2.1rem,6.5vw,3.2rem)]">{ev.name}</h1>
-          <p className="mt-3 text-[var(--color-ink-soft)]">
+          <p className="mt-3 text-[var(--color-dim)]">
             {course?.clubName ?? "Course TBC"}
             {tee && <> · {tee.name} tees · par {tee.par} · CR {tee.cr} / slope {tee.slope}</>}
             {" · "}Stableford off {ev.handicapAllowance}%
           </p>
-          {ev.notes && <p className="mt-1.5 italic text-[var(--color-ink-soft)]">{ev.notes}</p>}
+          {ev.notes && <p className="mt-1.5 italic text-[var(--color-dim)]">{ev.notes}</p>}
         </section>
 
         <div className="grid gap-8 lg:grid-cols-[1fr_20rem]">
@@ -93,7 +95,7 @@ export function EventView({ eventId }: { eventId: string }) {
               Enter the cards
             </SectionTitle>
 
-            <div className="card divide-y divide-[var(--rule)]">
+            <div className="card divide-y divide-[var(--color-line)]">
               {entries.map((en) => {
                 const player = db.players.find((p) => p.id === en.playerId)!;
                 const round = rounds.find((r) => r.playerId === en.playerId);
@@ -131,14 +133,14 @@ export function EventView({ eventId }: { eventId: string }) {
                       <span className="label mb-1 block">Points</span>
                       <span
                         className="num block text-[1.5rem] leading-[3.25rem]"
-                        style={{ color: round ? "var(--color-green)" : "var(--rule-strong)" }}
+                        style={{ color: round ? "var(--color-acid)" : "var(--color-line)" }}
                       >
                         {round?.stableford ?? "–"}
                       </span>
                     </div>
 
                     <button
-                      className="shrink-0 px-1.5 text-[1.1rem] leading-none text-[var(--rule-strong)] hover:text-[var(--color-flag)]"
+                      className="shrink-0 px-1.5 text-[1.1rem] leading-none text-[var(--color-line)] hover:text-[var(--color-live)]"
                       title={`Take ${player.shortName ?? player.name} out of this day`}
                       aria-label={`Remove ${player.name}`}
                       onClick={() => actions.removeFromEvent(ev.id, player.id)}
@@ -156,7 +158,7 @@ export function EventView({ eventId }: { eventId: string }) {
                 {notPlaying.map((p) => (
                   <button
                     key={p.id}
-                    className="chip hover:border-[var(--color-green)] hover:text-[var(--color-green)]"
+                    className="chip hover:border-[var(--color-acid)] hover:text-[var(--color-acid)]"
                     onClick={() => actions.addToEvent(ev.id, p.id)}
                   >
                     + {p.name}
@@ -168,6 +170,66 @@ export function EventView({ eventId }: { eventId: string }) {
             <p className="label mt-3">
               Type the gross, tab out — Societee works the Stableford out from the playing handicap.
             </p>
+
+            {/* --------------------------------------------- group links -- */}
+            <SectionTitle
+              aside={
+                <span className={`label ${byHole ? "" : "text-[var(--color-live)]"}`}>
+                  {byHole ? "Hole by hole ready" : "Totals only"}
+                </span>
+              }
+            >
+              Scoring links
+            </SectionTitle>
+
+            {byHole ? (
+              <>
+                <div className="grid gap-2 sm:grid-cols-2">
+                  {groups.map((g) => {
+                    const inGroup = select.groupPlayers(db, ev.id, g.groupNo);
+                    const url = `${origin}/score/${g.scorerToken}`;
+                    return (
+                      <div key={g.id} className="card feed p-3">
+                        <div className="flex items-baseline justify-between gap-2">
+                          <span className="name text-[1rem]">Group {g.groupNo}</span>
+                          <span className="label">from {g.startHole}</span>
+                        </div>
+                        <p className="label mt-1 truncate">
+                          {inGroup.map((x) => x.player.shortName ?? x.player.name).join(" · ") || "Nobody yet"}
+                        </p>
+                        <div className="mt-2.5 flex gap-2">
+                          <Link href={`/score/${g.scorerToken}`} className="btn btn-ghost flex-1 !min-h-[2.5rem] !text-[0.75rem]">
+                            Open
+                          </Link>
+                          <button
+                            className="btn btn-ghost !min-h-[2.5rem] !text-[0.75rem]"
+                            onClick={() => navigator.clipboard?.writeText(url)}
+                          >
+                            Copy link
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+                <p className="label mt-2">
+                  Send each group its own link. One phone per fourball scores hole by hole and the
+                  board updates as they play — still no sign-up for anybody.
+                </p>
+              </>
+            ) : (
+              <div className="card p-4">
+                <p className="text-[0.9rem] leading-relaxed text-[var(--color-dim)]">
+                  <span className="text-[var(--color-text)]">
+                    {course?.name} hasn’t got a scorecard in Societee yet.
+                  </span>{" "}
+                  Hole-by-hole scoring needs the real par and stroke index for all 18 holes — the
+                  stroke index decides who gets a shot where, so guessing it would produce points
+                  that look right and are wrong. Enter the totals above instead; that needs no card
+                  and is always correct.
+                </p>
+              </div>
+            )}
 
             {sideComps.length > 0 && (
               <>
@@ -181,7 +243,7 @@ export function EventView({ eventId }: { eventId: string }) {
                           {sc.kind === "ntp" ? "Nearest the pin" : "Longest drive"}
                           {sc.hole ? ` · hole ${sc.hole}` : ""}
                         </p>
-                        <p className="engraved mt-1.5 text-[1.15rem]">{winner?.name ?? "Not won"}</p>
+                        <p className="name mt-1.5 text-[1.15rem]">{winner?.name ?? "Not won"}</p>
                         {sc.detail && <p className="num mt-0.5 text-[0.85rem]">{sc.detail}</p>}
                       </div>
                     );
@@ -200,7 +262,7 @@ export function EventView({ eventId }: { eventId: string }) {
                   <QRCodeSVG value={shareUrl} size={148} level="M" bgColor="#ffffff" fgColor="#0b3d2c" />
                 )}
               </div>
-              <p className="mt-4 text-[0.875rem] leading-relaxed text-[var(--color-ink-soft)]">
+              <p className="mt-4 text-[0.875rem] leading-relaxed text-[var(--color-dim)]">
                 Print it, or hold up your phone. Everyone scans once and watches the board all day —
                 no download, no sign-up.
               </p>
@@ -215,7 +277,7 @@ export function EventView({ eventId }: { eventId: string }) {
                   Copy link
                 </button>
               </div>
-              <p className="num mt-3 break-all text-[0.72rem] text-[var(--color-ink-soft)]">
+              <p className="num mt-3 break-all text-[0.72rem] text-[var(--color-dim)]">
                 {shareUrl || "…"}
               </p>
             </div>
@@ -240,7 +302,7 @@ export function EventView({ eventId }: { eventId: string }) {
 
             <p className="mt-6 text-center">
               <button
-                className="label underline underline-offset-4 hover:text-[var(--color-flag)]"
+                className="label underline underline-offset-4 hover:text-[var(--color-live)]"
                 onClick={() => {
                   if (confirm(`Delete “${ev.name}” and every card in it? This can't be undone.`)) {
                     actions.deleteEvent(ev.id);
@@ -255,7 +317,7 @@ export function EventView({ eventId }: { eventId: string }) {
         </div>
 
         <section className="mt-12">
-          <HonoursBoard
+          <Leaderboard
             title={ev.name}
             subtitle={`${course?.name ?? ""} · ${fmtDate(ev.playsOn)} · Stableford`}
             rows={rows}
