@@ -61,22 +61,25 @@ create table subscriptions (
 
 -- ---------------------------------------------------------------------------
 -- COURSES  (global, shared across every society — one good course DB is a moat)
---   Seeded from the existing engine/courses.js.
+--
+--   IDs are readable text slugs ('conwy', 'conwy-white'), NOT uuids. The app
+--   ships a static course list and the database must agree with it exactly, so
+--   a generated id would mean a lookup table and a whole class of mapping bugs
+--   for no benefit. Seed with supabase/seed_courses.sql.
 -- ---------------------------------------------------------------------------
 create table courses (
-  id          uuid primary key default gen_random_uuid(),
+  id          text primary key,                -- 'conwy'
   name        text not null,
   club_name   text,
   county      text,
   country     text default 'Wales',
   holes       smallint not null default 18,
-  created_at  timestamptz not null default now(),
-  unique (name, club_name)
+  created_at  timestamptz not null default now()
 );
 
 create table tees (
-  id         uuid primary key default gen_random_uuid(),
-  course_id  uuid not null references courses on delete cascade,
+  id         text primary key,                 -- 'conwy-white'
+  course_id  text not null references courses on delete cascade,
   name       text not null,                    -- 'White', 'Blue', 'Yellow', 'Red'
   cr         numeric(4,1) not null,            -- Course Rating
   slope      smallint     not null,            -- Slope Rating (55-155)
@@ -87,13 +90,22 @@ create table tees (
 -- Stroke index + par per hole. Needed for live hole-by-hole scoring; the
 -- summary-only path (enter a gross, get points) works without it.
 create table holes (
-  tee_id       uuid not null references tees on delete cascade,
+  tee_id       text not null references tees on delete cascade,
   hole         smallint not null check (hole between 1 and 18),
   par          smallint not null,
   stroke_index smallint not null check (stroke_index between 1 and 18),
   yards        smallint,
   primary key (tee_id, hole)
 );
+
+-- Courses and tees are reference data: readable by anyone, written by nobody
+-- through the API. Keep RLS on with a read-only policy rather than off.
+alter table courses enable row level security;
+alter table tees    enable row level security;
+alter table holes   enable row level security;
+create policy "courses are public" on courses for select using (true);
+create policy "tees are public"    on tees    for select using (true);
+create policy "holes are public"   on holes   for select using (true);
 
 -- ---------------------------------------------------------------------------
 -- SOCIETIES

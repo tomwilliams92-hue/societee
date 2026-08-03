@@ -16,11 +16,19 @@ export type Tee = {
   par: number;
 };
 
+/**
+ * Which union's rules apply. Not cosmetic: from 1 Apr 2026 Wales, Scotland and
+ * Ireland allow singles Playing Handicap allowances of 85–100%, while England
+ * stays at a mandatory 95% until 2028. The course decides which applies.
+ */
+export type Union = "Wales" | "England" | "Scotland" | "Ireland";
+
 export type Course = {
   id: string;
   name: string;
   clubName?: string;
   county?: string;
+  country: Union;
   tees: Tee[];
 };
 

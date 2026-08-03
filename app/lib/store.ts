@@ -293,6 +293,47 @@ export const actions = {
   setEventStatus(eventId: string, status: GolfEvent["status"]) {
     update((db) => { const e = db.events.find((x) => x.id === eventId); if (e) e.status = status; });
   },
+
+  updatePlayer(playerId: string, patch: Partial<Pick<Player, "name" | "handicapIndex" | "active">>) {
+    update((db) => {
+      const p = db.players.find((x) => x.id === playerId);
+      if (p) Object.assign(p, patch, { shortName: patch.name?.split(" ")[0] ?? p.shortName });
+    });
+  },
+
+  /** Someone pulls out. Takes their card with them. */
+  removeFromEvent(eventId: string, playerId: string) {
+    update((db) => {
+      db.entries = db.entries.filter((e) => !(e.eventId === eventId && e.playerId === playerId));
+      db.rounds = db.rounds.filter((r) => !(r.eventId === eventId && r.playerId === playerId));
+    });
+  },
+
+  /** Someone turns up on the day. Handicap is computed and frozen now. */
+  addToEvent(eventId: string, playerId: string) {
+    update((db) => {
+      if (db.entries.some((e) => e.eventId === eventId && e.playerId === playerId)) return;
+      const ev = db.events.find((e) => e.id === eventId)!;
+      const tee = teeById(ev.teeId)!;
+      const p = db.players.find((x) => x.id === playerId)!;
+      const ch = p.handicapIndex != null ? courseHandicap(p.handicapIndex, tee) : null;
+      const groups = db.entries.filter((e) => e.eventId === eventId).length;
+      db.entries.push({
+        id: id("ent"), eventId, playerId,
+        playingHandicap: ch == null ? null : playingHandicap(ch, ev.handicapAllowance),
+        groupNo: Math.floor(groups / 4) + 1, startHole: 1,
+      });
+    });
+  },
+
+  deleteEvent(eventId: string) {
+    update((db) => {
+      db.events = db.events.filter((e) => e.id !== eventId);
+      db.entries = db.entries.filter((e) => e.eventId !== eventId);
+      db.rounds = db.rounds.filter((r) => r.eventId !== eventId);
+      db.sideComps = db.sideComps.filter((s) => s.eventId !== eventId);
+    });
+  },
 };
 
 /* --------------------------------------------------------------- selectors -- */

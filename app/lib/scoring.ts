@@ -11,7 +11,18 @@
  * Handicap convention throughout: PLUS GOLFERS ARE NEGATIVE (+1.6 => -1.6).
  * ------------------------------------------------------------------------- */
 
-import type { Tee } from "./types";
+import type { Tee, Union } from "./types";
+
+/**
+ * Playing Handicap allowances an organiser may legally choose, by union.
+ *
+ * From 1 Apr 2026 Wales, Scotland and Ireland permit 85/90/95/100% for singles.
+ * England postponed adoption until 2028, so 95% remains mandatory there — a day
+ * played at an English course has exactly one lawful option.
+ */
+export function allowancesFor(union: Union | undefined): number[] {
+  return union === "England" ? [95] : [85, 90, 95, 100];
+}
 
 /** Parse a WHS index string ("21.3", "+1.3", "-", "") to a number, plus = negative. */
 export function parseHandicap(s: string | number | null | undefined): number | null {

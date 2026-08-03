@@ -43,6 +43,7 @@ export const COURSES: Course[] = [
     name: "Conwy",
     clubName: "Conwy (Caernarvonshire) Golf Club",
     county: "Conwy",
+    country: "Wales",
     tees: [
       { id: "conwy-blue",  courseId: "conwy", name: "Blue",  cr: 74.5, slope: 138, par: 72 },
       { id: "conwy-white", courseId: "conwy", name: "White", cr: 71.9, slope: 121, par: 72 },
@@ -53,6 +54,7 @@ export const COURSES: Course[] = [
     name: "Bromborough",
     clubName: "Bromborough Golf Club",
     county: "Wirral",
+    country: "England",
     tees: [{ id: "bromborough-white", courseId: "bromborough", name: "White", cr: 72.9, slope: 142, par: 72 }],
   },
   {
@@ -60,6 +62,7 @@ export const COURSES: Course[] = [
     name: "Wallasey",
     clubName: "Wallasey Golf Club",
     county: "Wirral",
+    country: "England",
     tees: [{ id: "wallasey-white", courseId: "wallasey", name: "White", cr: 73.0, slope: 133, par: 72 }],
   },
   {
@@ -67,6 +70,7 @@ export const COURSES: Course[] = [
     name: "St Melyd",
     clubName: "St Melyd Golf Club",
     county: "Denbighshire",
+    country: "Wales",
     tees: [{ id: "stmelyd-white", courseId: "stmelyd", name: "White", cr: 68.4, slope: 120, par: 69 }],
   },
   {
@@ -74,6 +78,7 @@ export const COURSES: Course[] = [
     name: "Abergele",
     clubName: "Abergele Golf Club",
     county: "Conwy",
+    country: "Wales",
     tees: [{ id: "abergele-white", courseId: "abergele", name: "White", cr: 71.8, slope: 124, par: 72 }],
   },
 ];

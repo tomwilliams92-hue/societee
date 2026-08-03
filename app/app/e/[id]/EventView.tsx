@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Header, Footer, SectionTitle } from "@/components/Chrome";
@@ -11,6 +12,7 @@ import { courseById, teeById } from "@/lib/courses";
 
 export function EventView({ eventId }: { eventId: string }) {
   const db = useDB();
+  const router = useRouter();
   const ev = select.event(db, eventId);
   const [origin, setOrigin] = useState("");
 
@@ -59,6 +61,9 @@ export function EventView({ eventId }: { eventId: string }) {
   }));
 
   const cardsIn = rounds.length;
+  const notPlaying = select
+    .players(db, ev.societyId)
+    .filter((p) => !entries.some((en) => en.playerId === p.id));
 
   return (
     <>
@@ -131,10 +136,34 @@ export function EventView({ eventId }: { eventId: string }) {
                         {round?.stableford ?? "–"}
                       </span>
                     </div>
+
+                    <button
+                      className="shrink-0 px-1.5 text-[1.1rem] leading-none text-[var(--rule-strong)] hover:text-[var(--color-flag)]"
+                      title={`Take ${player.shortName ?? player.name} out of this day`}
+                      aria-label={`Remove ${player.name}`}
+                      onClick={() => actions.removeFromEvent(ev.id, player.id)}
+                    >
+                      ×
+                    </button>
                   </div>
                 );
               })}
             </div>
+
+            {notPlaying.length > 0 && (
+              <div className="mt-3 flex flex-wrap items-center gap-2">
+                <span className="label">Turned up late:</span>
+                {notPlaying.map((p) => (
+                  <button
+                    key={p.id}
+                    className="chip hover:border-[var(--color-green)] hover:text-[var(--color-green)]"
+                    onClick={() => actions.addToEvent(ev.id, p.id)}
+                  >
+                    + {p.name}
+                  </button>
+                ))}
+              </div>
+            )}
 
             <p className="label mt-3">
               Type the gross, tab out — Societee works the Stableford out from the playing handicap.
@@ -208,6 +237,20 @@ export function EventView({ eventId }: { eventId: string }) {
                 </button>
               )}
             </div>
+
+            <p className="mt-6 text-center">
+              <button
+                className="label underline underline-offset-4 hover:text-[var(--color-flag)]"
+                onClick={() => {
+                  if (confirm(`Delete “${ev.name}” and every card in it? This can't be undone.`)) {
+                    actions.deleteEvent(ev.id);
+                    router.push(`/s/${society.slug}`);
+                  }
+                }}
+              >
+                Delete this day
+              </button>
+            </p>
           </aside>
         </div>
 

@@ -5,8 +5,8 @@ import { useState } from "react";
 import { Header, Footer, SectionTitle } from "@/components/Chrome";
 import { HonoursBoard, type BoardRow } from "@/components/HonoursBoard";
 import { useDB, select, actions } from "@/lib/store";
-import { bestNTotal, formatHandicap, parseHandicap, rank } from "@/lib/scoring";
-import { COURSES, courseById } from "@/lib/courses";
+import { allowancesFor, bestNTotal, formatHandicap, parseHandicap, rank } from "@/lib/scoring";
+import { COURSES, courseById, courseOfTee } from "@/lib/courses";
 
 export function SocietyView({ slug }: { slug: string }) {
   const db = useDB();
@@ -127,6 +127,12 @@ export function SocietyView({ slug }: { slug: string }) {
       handicapAllowance: 95,
     });
 
+    // The course decides which allowances are lawful. Derive rather than store,
+    // so switching to an English course can't leave an unlawful value behind.
+    const union = courseOfTee(form.teeId)?.country;
+    const allowed = allowancesFor(union);
+    const allowance = allowed.includes(form.handicapAllowance) ? form.handicapAllowance : 95;
+
     return (
       <>
         <SectionTitle
@@ -145,7 +151,12 @@ export function SocietyView({ slug }: { slug: string }) {
             onSubmit={(e) => {
               e.preventDefault();
               if (!form.name.trim() || playerIds.length === 0) return;
-              actions.createEvent(societyId, { ...form, name: form.name.trim(), playerIds });
+              actions.createEvent(societyId, {
+                ...form,
+                name: form.name.trim(),
+                handicapAllowance: allowance,
+                playerIds,
+              });
               setOpen(false);
               setForm({ ...form, name: "" });
             }}
@@ -189,10 +200,11 @@ export function SocietyView({ slug }: { slug: string }) {
               <span className="label mb-1.5 block">Allowance</span>
               <select
                 className="field"
-                value={form.handicapAllowance}
+                value={allowance}
+                disabled={allowed.length === 1}
                 onChange={(e) => setForm({ ...form, handicapAllowance: Number(e.target.value) })}
               >
-                {[85, 90, 95, 100].map((a) => (
+                {allowed.map((a) => (
                   <option key={a} value={a}>
                     {a}%{a === 95 ? " (default)" : ""}
                   </option>
@@ -202,8 +214,12 @@ export function SocietyView({ slug }: { slug: string }) {
             <button className="btn btn-primary" type="submit">Create</button>
             <p className="label sm:col-span-5">
               All {playerIds.length} players are entered by default — take people out on the day.
-              Singles Stableford is <b>95%</b> under WHS, and that is still mandatory in England;
-              Wales, Scotland and Ireland have allowed 85–100% since April 2026.
+              {union === "England" ? (
+                <> Singles Stableford is fixed at <b>95%</b> in England until 2028.</>
+              ) : (
+                <> {union} has allowed 85–100% for singles since April 2026; <b>95%</b> is the
+                  WHS default.</>
+              )}
             </p>
           </form>
         )}
@@ -291,13 +307,32 @@ export function SocietyView({ slug }: { slug: string }) {
           {players.map((p) => (
             <div key={p.id} className="flex items-center gap-4 px-4 py-3">
               <span className="flex-1 truncate">{p.name}</span>
-              <span className="num text-[0.95rem]">{formatHandicap(p.handicapIndex)}</span>
-              <span className="label w-[7.5rem] text-right">
+              <label className="text-right">
+                <span className="label mr-2">Index</span>
+                <input
+                  className="num w-[5.5rem] rounded-[3px] border border-transparent bg-transparent px-2 py-1 text-right hover:border-[var(--rule-strong)] focus:border-[var(--color-green)] focus:bg-white focus:outline-none"
+                  defaultValue={formatHandicap(p.handicapIndex)}
+                  aria-label={`Handicap index for ${p.name}`}
+                  onBlur={(e) => {
+                    const v = parseHandicap(e.target.value);
+                    actions.updatePlayer(p.id, { handicapIndex: v });
+                    e.target.value = formatHandicap(v);
+                  }}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") (e.target as HTMLInputElement).blur();
+                  }}
+                />
+              </label>
+              <span className="label w-[5.5rem] text-right">
                 {select.roundsForPlayer(db, p.id).length} cards
               </span>
             </div>
           ))}
         </div>
+        <p className="label mt-2">
+          Indexes are typed in and kept up to date by you — click one to change it. Plus golfers
+          write as “+1.6”. Existing cards keep the handicap they were played off.
+        </p>
       </>
     );
   }
