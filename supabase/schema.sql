@@ -174,8 +174,8 @@ create table events (
   id           uuid primary key default gen_random_uuid(),
   society_id   uuid not null references societies on delete cascade,
   season_id    uuid references seasons on delete set null,
-  course_id    uuid references courses,
-  tee_id       uuid references tees,
+  course_id    text references courses,   -- slugs, not uuids
+  tee_id       text references tees,
   name         text not null,
   plays_on     date not null,
   tee_time     time,
@@ -229,8 +229,8 @@ create table rounds (
   id              uuid primary key default gen_random_uuid(),
   player_id       uuid not null references players on delete cascade,
   event_id        uuid references events on delete cascade,   -- NULL = a solo/club round
-  course_id       uuid references courses,
-  tee_id          uuid references tees,
+  course_id       text references courses,  -- slugs, not uuids
+  tee_id          text references tees,
   played_on       date not null,
   format          scoring_format not null default 'stableford',
 
