@@ -23,10 +23,29 @@ export const metadata: Metadata = {
   title: "Societee — run your golf society without the spreadsheets",
   description:
     "Live hole-by-hole scoring, a leaderboard on a QR code, and no sign-up for anyone but you.",
+  applicationName: "Societee",
+  // Added to the Home Screen, iOS uses these: full-screen, dark status bar,
+  // and the short name under the icon rather than the long page title.
+  appleWebApp: {
+    capable: true,
+    title: "Societee",
+    statusBarStyle: "black-translucent",
+  },
+  formatDetection: { telephone: false },
+  icons: {
+    icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
+    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+  },
 };
 
 export const viewport: Viewport = {
   themeColor: "#06080a",
+  // The scorer screen is used one-handed on a fairway; stop iOS zooming when a
+  // thumb lands near a stepper, and keep content clear of the home indicator.
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -47,6 +47,15 @@ body {
 
 ::selection { background: var(--color-acid); color: #06080a; }
 
+/* Installed to the Home Screen the page runs edge to edge, so keep content out
+   from under the notch and the home indicator. */
+body {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+header.sticky { padding-top: env(safe-area-inset-top); }
+
 /* ----------------------------------------------------------------- type -- */
 
 /* Headline: heavy, condensed, uppercase. The broadcast lower-third voice. */
