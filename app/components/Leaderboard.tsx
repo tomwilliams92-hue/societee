@@ -49,7 +49,13 @@ export function Leaderboard({
             }
             style={{ animationDelay: `${Math.min(i, 14) * 35}ms` }}
           >
-            <span className="pos">{r.value == null ? "–" : `${r.position}${r.tied ? "=" : ""}`}</span>
+            {r.value != null && r.position <= 3 ? (
+              <span className={`medal medal-${["gold", "silver", "bronze"][r.position - 1]}`}>
+                {r.position}
+              </span>
+            ) : (
+              <span className="pos">{r.value == null ? "–" : `${r.position}${r.tied ? "=" : ""}`}</span>
+            )}
             <span className="min-w-0">
               <span className="nm block truncate">{r.name}</span>
               {r.note && <span className="label mt-0.5 block">{r.note}</span>}

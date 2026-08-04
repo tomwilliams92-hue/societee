@@ -75,21 +75,54 @@ export function EventView({ eventId }: { eventId: string }) {
       <Header back={{ href: `/society?s=${society.slug}`, label: society.name }} />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-16">
-        <section className="py-9">
-          <div className="flex flex-wrap items-center gap-3">
-            <p className="label">{fmtDate(ev.playsOn)}</p>
-            {ev.status === "live" && (
+        <section className="py-6">
+          <h1 className="display text-[clamp(1.6rem,5vw,2.2rem)]">{ev.name}</h1>
+          {/* one row of chips instead of a wrapping sentence */}
+          <div className="mt-3 flex flex-wrap items-center gap-1.5">
+            {ev.status === "live" && ev.playsOn === new Date().toISOString().slice(0, 10) && (
               <span className="chip chip-live"><span className="pulse" /> Live</span>
             )}
+            <span className="chip">{fmtDate(ev.playsOn)}</span>
+            {course && <span className="chip">{course.name}{tee ? ` · ${tee.name}` : ""}</span>}
+            {tee && <span className="chip">Par {tee.par}</span>}
+            <span className="chip chip-acid">{ev.handicapAllowance}%</span>
           </div>
-          <h1 className="display mt-2 text-[clamp(1.7rem,5vw,2.4rem)]">{ev.name}</h1>
-          <p className="mt-3 text-[var(--color-dim)]">
-            {course?.clubName ?? "Course TBC"}
-            {tee && <> · {tee.name} tees · par {tee.par} · CR {tee.cr} / slope {tee.slope}</>}
-            {" · "}Stableford off {ev.handicapAllowance}%
-          </p>
-          {ev.notes && <p className="mt-1.5 italic text-[var(--color-dim)]">{ev.notes}</p>}
+          {ev.notes && <p className="label mt-2.5 !normal-case !tracking-normal">{ev.notes}</p>}
         </section>
+
+        {(() => {
+          const done = rounds.filter((r) => r.stableford != null);
+          if (done.length < 2) return null;
+          const nameOf = (pid: string) => {
+            const pl = db.players.find((p) => p.id === pid);
+            return pl?.shortName ?? pl?.name ?? "—";
+          };
+          const best = (val: (r: (typeof done)[number]) => number | null, dir: 1 | -1) => {
+            let top: number | null = null;
+            for (const r of done) { const v = val(r); if (v == null) continue;
+              if (top == null || v * dir < top * dir) top = v; }
+            if (top == null) return null;
+            const who = done.filter((r) => val(r) === top).map((r) => nameOf(r.playerId));
+            return { v: top, who: who.slice(0, 2).join(" & ") + (who.length > 2 ? " +" : "") };
+          };
+          const cells = [
+            { k: "Best gross", d: best((r) => r.gross, 1), x: "" },
+            { k: "Best nett", d: best((r) => r.net, 1), x: "" },
+            { k: "Best points", d: best((r) => r.stableford, -1), x: " pts" },
+          ].filter((c) => c.d);
+          if (!cells.length) return null;
+          return (
+            <div className="mb-6 grid grid-cols-3 gap-2">
+              {cells.map((c) => (
+                <div key={c.k} className="card p-3 text-center">
+                  <p className="label !text-[0.55rem]">{c.k}</p>
+                  <p className="num mt-1 text-[1.15rem]" style={{ color: "var(--color-gold)" }}>{c.d!.v}{c.x}</p>
+                  <p className="label mt-0.5 truncate !text-[0.58rem]">{c.d!.who}</p>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
 
         <div className="grid gap-8 lg:grid-cols-[1fr_20rem]">
           {/* ------------------------------------------------- scoring -- */}
@@ -371,9 +404,8 @@ export function EventView({ eventId }: { eventId: string }) {
 
 function fmtDate(iso: string) {
   return new Date(iso + "T12:00:00").toLocaleDateString("en-GB", {
-    weekday: "long",
+    weekday: "short",
     day: "numeric",
-    month: "long",
-    year: "numeric",
+    month: "short",
   });
 }

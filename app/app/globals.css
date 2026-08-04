@@ -18,6 +18,9 @@
   --color-acid-dim: #25a802;
   --color-live:     #ff4438;
   --color-under:    #4ad6a0;   /* better than par */
+  --color-gold:     #f5c542;
+  --color-silver:   #cfd8dd;
+  --color-bronze:   #d08a4d;
 
   --font-display: var(--font-archivo);
   --font-sans:    var(--font-archivo);
@@ -315,6 +318,22 @@ header.sticky { padding-top: env(safe-area-inset-top); }
 }
 .hole-cell.played { background: #12300c; color: var(--color-acid); }
 .hole-cell.blank  { background: var(--color-panel-2); color: #3a444c; }
+
+/* ------------------------------------------------------- podium medals -- */
+.medal {
+  display: grid;
+  place-items: center;
+  width: 1.7rem;
+  height: 1.7rem;
+  border-radius: 999px;
+  font-weight: 800;
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: #06080a;
+}
+.medal-gold   { background: var(--color-gold); }
+.medal-silver { background: var(--color-silver); }
+.medal-bronze { background: var(--color-bronze); }
 
 /* ---------------------------------------------- scorecard notation ------ */
 /* The marks every golfer already reads: circle birdie, double-circle eagle,

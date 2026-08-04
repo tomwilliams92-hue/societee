@@ -90,7 +90,7 @@ export function SocietyView({ slug }: { slug: string }) {
                 borderBottom: `2px solid ${tab === t ? "var(--color-acid)" : "transparent"}`,
               }}
             >
-              {t === "merit" ? "Order of Merit" : t}
+              {t === "merit" ? "Order of Merit" : t === "events" ? "days / events" : t}
             </button>
           ))}
         </nav>
@@ -128,7 +128,7 @@ export function SocietyView({ slug }: { slug: string }) {
             </Link>
           }
         >
-          Golf days
+          <span className="inline-flex items-center gap-2"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-acid)" strokeWidth="2" strokeLinecap="round"><path d="M5 21V4" /><path d="M5 4c4-2 7 2 14 0v9c-7 2-10-2-14 0" /></svg>Golf days / events</span>
         </SectionTitle>
 
         {select.seriesFor(db, societyId).map((sr) => {

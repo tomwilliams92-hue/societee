@@ -26,7 +26,7 @@ function BottomNavInner() {
   if (path.startsWith("/live-board") || path.startsWith("/scorecard")) return null;
   if (!ready) return null;
 
-  const live = db.events.find((e) => e.status === "live");
+  const live = select.liveToday(db);
 
   // "Season" points at the society you're LOOKING at, so it never yanks you
   // sideways into a different society — that reads as "I can't get back".
@@ -46,38 +46,35 @@ function BottomNavInner() {
     db.societies.find((x) => select.currentSeason(db, x.id)) ??
     db.societies[0];
 
-  const items: { href: string; label: string; icon: React.ReactNode; on: boolean; live?: boolean }[] = [
+  // FIVE slots, ALWAYS, in the same order. Tabs that don't apply right now dim
+  // out instead of disappearing — a bar that reshuffles between screens reads
+  // as the app moving the furniture while you're in the room.
+  const items: { href: string; label: string; icon: React.ReactNode; on: boolean; live?: boolean; off?: boolean }[] = [
     { href: "/", label: "Home", icon: <HomeIcon />, on: path === "/" },
-  ];
-  if (seasonSociety) {
-    items.push({
-      href: `/society?s=${seasonSociety.slug}`,
+    {
+      href: seasonSociety ? `/society?s=${seasonSociety.slug}` : "/",
       label: "Season",
       icon: <TrophyIcon />,
       on: path.startsWith("/society"),
-    });
-  }
-  if (live) {
-    items.push({
-      href: `/event?e=${live.id}`,
-      label: "Live day",
+      off: !seasonSociety,
+    },
+    {
+      href: live ? `/event?e=${live.id}` : "/",
+      label: "Today",
       icon: <FlagIcon />,
       on: path.startsWith("/event"),
-      live: true,
-    });
-    items.push({
-      href: `/live-board?b=${live.shareToken}`,
+      live: Boolean(live),
+      off: !live,
+    },
+    {
+      href: live ? `/live-board?b=${live.shareToken}` : "/",
       label: "Board",
       icon: <BoardIcon />,
       on: false,
-    });
-  }
-  items.push({
-    href: "/profile",
-    label: "Profile",
-    icon: <PersonIcon />,
-    on: path.startsWith("/profile"),
-  });
+      off: !live,
+    },
+    { href: "/profile", label: "Profile", icon: <PersonIcon />, on: path.startsWith("/profile") },
+  ];
 
   return (
     <>
@@ -93,10 +90,15 @@ function BottomNavInner() {
             <Link
               key={it.label}
               href={it.href}
-              className="relative flex min-w-[4.5rem] flex-col items-center gap-1 px-3 pb-2 pt-2.5"
-              style={{ color: it.on ? "var(--color-acid)" : "var(--color-dim)" }}
+              aria-disabled={it.off}
+              className="relative flex min-w-[4.2rem] flex-col items-center gap-1 px-2 pb-2 pt-2.5"
+              style={{
+                color: it.on ? "var(--color-acid)" : "var(--color-dim)",
+                opacity: it.off ? 0.32 : 1,
+                pointerEvents: it.off ? "none" : undefined,
+              }}
             >
-              {it.live && !it.on && (
+              {it.live && !it.off && !it.on && (
                 <span className="absolute right-3 top-2 h-1.5 w-1.5 rounded-full bg-[var(--color-live)]" />
               )}
               {it.icon}

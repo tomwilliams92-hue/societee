@@ -19,7 +19,7 @@ export default function Home() {
   const [name, setName] = useState("");
   const me = db.me;
 
-  const live = db.events.find((e) => e.status === "live");
+  const live = select.liveToday(db);
   const liveSoc = live ? db.societies.find((s) => s.id === live.societyId) : undefined;
 
   return (
@@ -115,7 +115,7 @@ export default function Home() {
             const players = select.players(db, s.id);
             const season = select.currentSeason(db, s.id);
             const events = select.events(db, s.id);
-            const isLive = events.some((e) => e.status === "live");
+            const isLive = select.liveToday(db)?.societyId === s.id;
 
             let leader: string | null = null;
             if (season) {

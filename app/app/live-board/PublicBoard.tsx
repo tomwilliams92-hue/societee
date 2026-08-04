@@ -128,7 +128,13 @@ export function PublicBoard({ token }: { token: string }) {
               }
               style={{ animationDelay: `${120 + Math.min(i, 16) * 30}ms` }}
             >
-              <span className="pos">{r.thru === 0 ? "–" : `${r.position}${r.tied ? "=" : ""}`}</span>
+              {r.thru > 0 && r.position <= 3 ? (
+                <span className={`medal medal-${["gold", "silver", "bronze"][r.position - 1]}`}>
+                  {r.position}
+                </span>
+              ) : (
+                <span className="pos">{r.thru === 0 ? "–" : `${r.position}${r.tied ? "=" : ""}`}</span>
+              )}
               <span className="min-w-0">
                 <span className="nm block truncate">{r.player.name}</span>
                 <span className="label mt-0.5 block">
@@ -141,6 +147,8 @@ export function PublicBoard({ token }: { token: string }) {
             </div>
           ))}
         </div>
+
+        <Honours eventId={ev.id} />
 
         {/* --------------------------------------------------- side pots -- */}
         {sideComps.length > 0 && (
@@ -174,5 +182,46 @@ export function PublicBoard({ token }: { token: string }) {
         </footer>
       </div>
     </main>
+  );
+}
+
+/** Best gross / best nett / best Stableford among cards in. */
+function Honours({ eventId }: { eventId: string }) {
+  const db = useDB();
+  const rounds = select.roundsForEvent(db, eventId);
+  const done = rounds.filter((r) => r.stableford != null);
+  if (done.length < 2) return null;
+  const nameOf = (pid: string) =>
+    db.players.find((p) => p.id === pid)?.shortName ??
+    db.players.find((p) => p.id === pid)?.name ?? "—";
+  const best = (val: (r: (typeof done)[number]) => number | null, dir: 1 | -1) => {
+    let top: number | null = null;
+    for (const r of done) {
+      const v = val(r);
+      if (v == null) continue;
+      if (top == null || v * dir < top * dir) top = v;
+    }
+    if (top == null) return null;
+    const winners = done.filter((r) => val(r) === top).map((r) => nameOf(r.playerId));
+    return { v: top, who: winners.slice(0, 2).join(" & ") + (winners.length > 2 ? " +" : "") };
+  };
+  const cells = [
+    { k: "Best gross", d: best((r) => r.gross, 1), suffix: "" },
+    { k: "Best nett", d: best((r) => r.net, 1), suffix: "" },
+    { k: "Best points", d: best((r) => r.stableford, -1), suffix: " pts" },
+  ].filter((c) => c.d);
+  if (!cells.length) return null;
+  return (
+    <div className="mt-4 grid grid-cols-3 gap-2">
+      {cells.map((c) => (
+        <div key={c.k} className="card p-3 text-center">
+          <p className="label !text-[0.55rem]">{c.k}</p>
+          <p className="num mt-1 text-[1.15rem]" style={{ color: "var(--color-gold)" }}>
+            {c.d!.v}{c.suffix}
+          </p>
+          <p className="label mt-0.5 truncate !text-[0.58rem]">{c.d!.who}</p>
+        </div>
+      ))}
+    </div>
   );
 }

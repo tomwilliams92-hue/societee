@@ -152,7 +152,8 @@ function seed(): DB {
   const tee = teeById("conwy-white")!;
   const ev: GolfEvent = {
     id: "evt-swindle-aug", societyId: swindle.id, courseId: "conwy", teeId: tee.id,
-    name: "August Meeting", playsOn: "2026-08-01", teeTime: "09:20",
+    // seeded on "today" so the demo always shows a genuinely live day
+    name: "August Meeting", playsOn: new Date().toISOString().slice(0, 10), teeTime: "09:20",
     format: "stableford", handicapAllowance: 95, status: "live",
     shareToken: "augmeet", notes: "£10 in the pot. Two-tee start.",
   };
@@ -596,6 +597,12 @@ export const select = {
     db.events.filter((e) => e.societyId === societyId).sort((a, b) => b.playsOn.localeCompare(a.playsOn)),
   event: (db: DB, eventId: string) => db.events.find((e) => e.id === eventId),
   eventByToken: (db: DB, t: string) => db.events.find((e) => e.shareToken === t),
+  /** Live = scoring open AND it's the day itself. An event left open last
+   *  Saturday is not "live" on Tuesday — it's unfinished admin. */
+  liveToday: (db: DB) => {
+    const today = new Date().toISOString().slice(0, 10);
+    return db.events.find((e) => e.status === "live" && e.playsOn === today);
+  },
   entries: (db: DB, eventId: string) => db.entries.filter((e) => e.eventId === eventId),
   roundsForEvent: (db: DB, eventId: string) => db.rounds.filter((r) => r.eventId === eventId),
   roundsForPlayer: (db: DB, playerId: string) =>
