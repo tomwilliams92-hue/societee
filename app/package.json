@@ -6,7 +6,8 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "phone": "next build && next start -H 0.0.0.0 -p 3000"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.4",
