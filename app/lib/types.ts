@@ -100,10 +100,23 @@ export type Season = {
   isCurrent: boolean;
 };
 
+/**
+ * A trip or multi-round competition: several golf days whose points add up on
+ * one combined board (R1 · R2 · R3, like any tour event). Each day stays an
+ * ordinary event — same scoring links, same board — the series just sums them.
+ */
+export type Series = {
+  id: string;
+  societyId: string;
+  name: string;
+};
+
 export type GolfEvent = {
   id: string;
   societyId: string;
   seasonId?: string | null;
+  /** set when this day is one round of a Series */
+  seriesId?: string | null;
   courseId?: string;
   teeId?: string;
   name: string;

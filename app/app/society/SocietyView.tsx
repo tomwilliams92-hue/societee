@@ -5,8 +5,8 @@ import { useState } from "react";
 import { Header, Footer, SectionTitle } from "@/components/Chrome";
 import { Leaderboard, type BoardRow } from "@/components/Leaderboard";
 import { useDB, select, actions } from "@/lib/store";
-import { allowancesFor, bestNTotal, formatHandicap, parseHandicap, rank } from "@/lib/scoring";
-import { COURSES, courseById, courseOfTee } from "@/lib/courses";
+import { bestNTotal, formatHandicap, parseHandicap, rank } from "@/lib/scoring";
+import { courseById } from "@/lib/courses";
 
 export function SocietyView({ slug }: { slug: string }) {
   const db = useDB();
@@ -110,7 +110,7 @@ export function SocietyView({ slug }: { slug: string }) {
             </p>
           ))}
 
-        {tab === "events" && <EventsTab societyId={society.id} playerIds={players.map((p) => p.id)} />}
+        {tab === "events" && <EventsTab societyId={society.id} />}
         {tab === "players" && <PlayersTab societyId={society.id} />}
       </main>
 
@@ -118,115 +118,60 @@ export function SocietyView({ slug }: { slug: string }) {
     </>
   );
 
-  function EventsTab({ societyId, playerIds }: { societyId: string; playerIds: string[] }) {
-    const [open, setOpen] = useState(false);
-    const [form, setForm] = useState({
-      name: "",
-      playsOn: new Date().toISOString().slice(0, 10),
-      teeId: "conwy-white",
-      handicapAllowance: 95,
-    });
-
-    // The course decides which allowances are lawful. Derive rather than store,
-    // so switching to an English course can't leave an unlawful value behind.
-    const union = courseOfTee(form.teeId)?.country;
-    const allowed = allowancesFor(union);
-    const allowance = allowed.includes(form.handicapAllowance) ? form.handicapAllowance : 95;
-
+  function EventsTab({ societyId }: { societyId: string }) {
     return (
       <>
         <SectionTitle
           aside={
-            <button className="btn btn-ghost !min-h-[2.25rem] !text-[0.8125rem]" onClick={() => setOpen((v) => !v)}>
-              {open ? "Cancel" : "New golf day"}
-            </button>
+            <Link href={`/new-day?s=${society!.slug}`} className="btn btn-primary !min-h-[2.25rem] !text-[0.8125rem]">
+              New golf day
+            </Link>
           }
         >
           Golf days
         </SectionTitle>
 
-        {open && (
-          <form
-            className="card mb-5 grid gap-3 p-4 sm:grid-cols-[1fr_auto_auto_auto_auto] sm:items-end"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!form.name.trim() || playerIds.length === 0) return;
-              actions.createEvent(societyId, {
-                ...form,
-                name: form.name.trim(),
-                handicapAllowance: allowance,
-                playerIds,
-              });
-              setOpen(false);
-              setForm({ ...form, name: "" });
-            }}
-          >
-            <label>
-              <span className="label mb-1.5 block">What’s it called</span>
-              <input
-                className="field"
-                autoFocus
-                placeholder="August Meeting"
-                value={form.name}
-                onChange={(e) => setForm({ ...form, name: e.target.value })}
+        {select.seriesFor(db, societyId).map((sr) => {
+          const days = select.seriesEvents(db, sr.id);
+          if (!days.length) return null;
+          const totals = players
+            .map((p) => {
+              const per = days.map((d) =>
+                db.rounds.find((r) => r.eventId === d.id && r.playerId === p.id)?.stableford ?? null
+              );
+              const total = per.reduce((a: number, x) => a + (x ?? 0), 0);
+              return { p, per, total, played: per.some((x) => x != null) };
+            })
+            .filter((x) => x.played);
+          const rows = rank(totals, (x) => x.total).map((x) => ({
+            key: x.p.id,
+            name: x.p.name,
+            position: x.position,
+            tied: x.tied,
+            value: x.total,
+            note: x.per.map((v, i) => `R${i + 1} ${v ?? "–"}`).join(" · "),
+          }));
+          return (
+            <div key={sr.id} className="mb-6">
+              <Leaderboard
+                title={sr.name}
+                subtitle={`${days.length} rounds · combined Stableford`}
+                rows={rows}
+                unit="total"
+                empty="No cards in yet."
               />
-            </label>
-            <label>
-              <span className="label mb-1.5 block">Date</span>
-              <input
-                className="field"
-                type="date"
-                value={form.playsOn}
-                onChange={(e) => setForm({ ...form, playsOn: e.target.value })}
-              />
-            </label>
-            <label>
-              <span className="label mb-1.5 block">Course &amp; tee</span>
-              <select
-                className="field"
-                value={form.teeId}
-                onChange={(e) => setForm({ ...form, teeId: e.target.value })}
-              >
-                {COURSES.flatMap((c) =>
-                  c.tees.map((t) => (
-                    <option key={t.id} value={t.id}>
-                      {c.name} — {t.name}
-                    </option>
-                  ))
-                )}
-              </select>
-            </label>
-            <label>
-              <span className="label mb-1.5 block">Allowance</span>
-              <select
-                className="field"
-                value={allowance}
-                disabled={allowed.length === 1}
-                onChange={(e) => setForm({ ...form, handicapAllowance: Number(e.target.value) })}
-              >
-                {allowed.map((a) => (
-                  <option key={a} value={a}>
-                    {a}%{a === 95 ? " (default)" : ""}
-                  </option>
-                ))}
-              </select>
-            </label>
-            <button className="btn btn-primary" type="submit">Create</button>
-            <p className="label sm:col-span-5">
-              All {playerIds.length} players are entered by default — take people out on the day.
-              {union === "England" ? (
-                <> Singles Stableford is fixed at <b>95%</b> in England until 2028.</>
-              ) : (
-                <> {union} has allowed 85–100% for singles since April 2026; <b>95%</b> is the
-                  WHS default.</>
-              )}
-            </p>
-          </form>
-        )}
+              <p className="label mt-2">
+                {days.map((d) => d.name).join(" · ")}
+              </p>
+            </div>
+          );
+        })}
 
         <div className="grid gap-3">
           {events.length === 0 && (
-            <p className="card p-6 text-center text-[var(--color-dim)]">No golf days yet.</p>
+            <p className="card p-6 text-center text-[var(--color-dim)]">
+              No golf days yet — tap New golf day and we’ll set one up properly.
+            </p>
           )}
           {events.map((ev) => {
             const course = courseById(ev.courseId);

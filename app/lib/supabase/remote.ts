@@ -141,7 +141,7 @@ export const map = {
 
 const EMPTY_DB: DB = {
   societies: [], players: [], seasons: [], events: [], groups: [],
-  entries: [], rounds: [], holeScores: [], sideComps: [], cards: {}, me: null,
+  entries: [], rounds: [], holeScores: [], sideComps: [], series: [], cards: {}, me: null,
 };
 
 /**

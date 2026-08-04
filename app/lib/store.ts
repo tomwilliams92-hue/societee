@@ -16,7 +16,7 @@
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type {
   EventEntry, EventGroup, GolfEvent, HoleInfo, HoleScore, Player, Round, Season,
-  SideComp, Society,
+  Series, SideComp, Society,
 } from "./types";
 import { teeById } from "./courses";
 import { courseHandicap, holePoints, playingHandicap } from "./scoring";
@@ -33,6 +33,7 @@ export type DB = {
   rounds: Round[];
   holeScores: HoleScore[];
   sideComps: SideComp[];
+  series: Series[];
   /**
    * Scorecards typed in by organisers, keyed by tee id. Merged over the static
    * list in lib/courses.ts. This is how the course database actually fills up:
@@ -56,7 +57,7 @@ function migrate(db: Partial<DB>): DB {
     societies: db.societies ?? [], players: db.players ?? [], seasons: db.seasons ?? [],
     events: db.events ?? [], groups: db.groups ?? [], entries: db.entries ?? [],
     rounds: db.rounds ?? [], holeScores: db.holeScores ?? [], sideComps: db.sideComps ?? [],
-    cards: db.cards ?? {},
+    series: db.series ?? [], cards: db.cards ?? {},
     me: db.me ?? null,
   };
 }
@@ -106,7 +107,7 @@ const SWINDLE = [
 function seed(): DB {
   const db: DB = {
     societies: [], players: [], seasons: [], events: [], groups: [],
-    entries: [], rounds: [], holeScores: [], sideComps: [], cards: {}, me: null,
+    entries: [], rounds: [], holeScores: [], sideComps: [], series: [], cards: {}, me: null,
   };
 
   /* ---------- Society 1: a season-long Order of Merit across the summer ---- */
@@ -195,6 +196,46 @@ function seed(): DB {
     { id: id("sc"), eventId: ev.id, kind: "ntp", hole: 3, winnerId: db.players.at(-4)!.id, detail: "1.2m" },
     { id: id("sc"), eventId: ev.id, kind: "longest_drive", hole: 12, winnerId: db.players.at(-3)!.id }
   );
+
+  /* --------- a completed two-day trip, so the combined board has life ------ */
+  const spring: Series = { id: "srs-spring", societyId: swindle.id, name: "Spring Trip" };
+  db.series.push(spring);
+  const swindlers = db.players.filter((p) => p.societyId === swindle.id);
+  const tripDays: [string, string, string, (number | null)[]][] = [
+    // date, teeId, name, points for the 12 in seed order
+    ["2026-05-09", "stmelyd-white",  "Trip day 1 — St Melyd",
+      [34, 31, 36, 28, 33, 35, 27, 32, 25, 34, 30, 37]],
+    ["2026-05-10", "abergele-white", "Trip day 2 — Abergele",
+      [31, 35, 33, 30, 29, 38, 31, 28, 27, 32, 26, 34]],
+  ];
+  for (const [date, teeId, name, pts] of tripDays) {
+    const t = teeById(teeId)!;
+    const dayEv: GolfEvent = {
+      id: id("evt"), societyId: swindle.id, seriesId: spring.id,
+      courseId: t.courseId, teeId: t.id, name, playsOn: date,
+      format: "stableford", handicapAllowance: 95, status: "complete",
+      shareToken: token(),
+    };
+    db.events.push(dayEv);
+    swindlers.forEach((p, i) => {
+      const chD = courseHandicap(p.handicapIndex!, t);
+      const phD = playingHandicap(chD, 95);
+      db.entries.push({
+        id: id("ent"), eventId: dayEv.id, playerId: p.id,
+        playingHandicap: phD, groupNo: Math.floor(i / 4) + 1, startHole: 1,
+      });
+      const pt = pts[i];
+      if (pt != null) {
+        const grossD = 36 + phD + t.par - pt;
+        db.rounds.push({
+          id: id("rnd"), playerId: p.id, eventId: dayEv.id, courseId: t.courseId,
+          teeId: t.id, playedOn: date, format: "stableford",
+          gross: grossD, adjustedGross: grossD, courseHandicap: phD,
+          stableford: pt, net: grossD - phD, source: "manual", verified: false,
+        });
+      }
+    });
+  }
 
   return db;
 }
@@ -287,6 +328,8 @@ export const actions = {
     societyId: string,
     input: {
       name: string; playsOn: string; teeId: string; playerIds: string[];
+      /** name of the trip this day belongs to — found or created per society */
+      seriesName?: string;
       /**
        * Playing handicap allowance, %. 95 is the WHS default for individual
        * Stableford and is *mandatory* in England until 2028. Ireland, Scotland
@@ -304,6 +347,15 @@ export const actions = {
       status: "live", shareToken: token(),
     };
     update((db) => {
+      const trip = input.seriesName?.trim();
+      if (trip) {
+        const key = trip.toLowerCase();
+        let sr = db.series.find(
+          (x) => x.societyId === societyId && x.name.trim().toLowerCase() === key
+        );
+        if (!sr) { sr = { id: id("srs"), societyId, name: trip }; db.series.push(sr); }
+        ev.seriesId = sr.id;
+      }
       db.events.push(ev);
       input.playerIds.forEach((pid, i) => {
         const p = db.players.find((x) => x.id === pid);
@@ -540,6 +592,10 @@ export const select = {
   currentSeason: (db: DB, societyId: string) =>
     db.seasons.find((s) => s.societyId === societyId && s.isCurrent),
   sideComps: (db: DB, eventId: string) => db.sideComps.filter((s) => s.eventId === eventId),
+
+  seriesFor: (db: DB, societyId: string) => db.series.filter((x) => x.societyId === societyId),
+  seriesEvents: (db: DB, seriesId: string) =>
+    db.events.filter((e) => e.seriesId === seriesId).sort((a, b) => a.playsOn.localeCompare(b.playsOn)),
 
   /**
    * The scorecard in force for a tee: an organiser-entered one wins over the

@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, Azeret_Mono } from "next/font/google";
 import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
+import { SWRegister } from "@/components/SWRegister";
 
 /** Set only for the GitHub Pages build, which serves from /<repo>/. */
 const BASE = process.env.PAGES_BASE_PATH ?? "";
@@ -61,6 +62,7 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       <body className="min-h-full flex flex-col">
         {children}
         <BottomNav />
+        <SWRegister />
       </body>
     </html>
   );

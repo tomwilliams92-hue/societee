@@ -13,6 +13,7 @@ const nextConfig: NextConfig = {
   images: { unoptimized: true },
   trailingSlash: true,
   basePath: base || undefined,
+  env: { NEXT_PUBLIC_BASE_PATH: base },
   assetPrefix: base || undefined,
 };
 export default nextConfig;
