@@ -6,7 +6,7 @@ import { Header, Footer } from "@/components/Chrome";
 import { SocietyBadge } from "@/components/Badge";
 import { useRouter } from "next/navigation";
 import { useDB, useReady, select, resetDemo } from "@/lib/store";
-import { bestNTotal } from "@/lib/scoring";
+import { bestNTotal, rank } from "@/lib/scoring";
 
 /**
  * Home is a dashboard, not a landing page: what's live, then your societies,
@@ -72,29 +72,72 @@ export default function Home() {
           </Link>
         </section>
 
-        {/* ------------------------------------------------- live now ------ */}
-        {live && (
-          <Link
-            href={`/event?e=${live.id}`}
-            className="card mb-7 block p-4 transition-transform hover:-translate-y-0.5 rise"
-            style={{
-              borderColor: "rgba(47,219,0,0.55)",
-              boxShadow: "0 0 0 1px rgba(47,219,0,0.25), 0 14px 40px -18px rgba(47,219,0,0.35)",
-            }}
-          >
-            <div className="flex items-center justify-between gap-3">
-              <span className="chip chip-live"><span className="pulse" /> Live now</span>
-              <span className="label">{select.roundsForEvent(db, live.id).length} of {select.entries(db, live.id).length} in</span>
-            </div>
-            <div className="mt-3 flex items-end justify-between gap-3">
-              <div className="min-w-0">
-                <h3 className="display truncate text-[1.35rem]">{live.name}</h3>
-                <p className="label mt-1">{liveSoc?.name}</p>
+        {/* ---------------------------------------- live now: the hero ----- */}
+        {live && (() => {
+          const entries = select.entries(db, live.id);
+          const rounds = select.roundsForEvent(db, live.id);
+          const ranked = rank(
+            entries.map((en) => ({
+              en,
+              player: db.players.find((pl) => pl.id === en.playerId)!,
+              pts: rounds.find((r) => r.playerId === en.playerId)?.stableford ?? null,
+            })),
+            (r) => r.pts
+          );
+          const top3 = ranked.filter((r) => r.pts != null).slice(0, 3);
+          const mine = me?.name
+            ? ranked.find((r) => r.player?.name.trim().toLowerCase() === me.name.trim().toLowerCase())
+            : undefined;
+          return (
+            <div
+              className="card mb-7 overflow-hidden rise"
+              style={{
+                borderColor: "rgba(47,219,0,0.55)",
+                boxShadow: "0 0 0 1px rgba(47,219,0,0.25), 0 14px 40px -18px rgba(47,219,0,0.35)",
+              }}
+            >
+              <Link href={`/event?e=${live.id}`} className="block p-4 pb-3">
+                <div className="flex items-center justify-between gap-3">
+                  <span className="chip chip-live"><span className="pulse" /> Live now</span>
+                  <span className="label">{rounds.length} of {entries.length} in</span>
+                </div>
+                <div className="mt-3 flex items-center gap-3">
+                  <SocietyBadge society={liveSoc} size={44} rounded={11} />
+                  <div className="min-w-0">
+                    <h3 className="display truncate text-[1.35rem]">{live.name}</h3>
+                    <p className="label mt-0.5">{liveSoc?.name}</p>
+                  </div>
+                </div>
+
+                {top3.length > 0 && (
+                  <div className="mt-3.5 grid gap-1.5">
+                    {top3.map((r) => (
+                      <div key={r.en.id} className="flex items-center gap-2.5">
+                        <span className={`medal medal-${["gold", "silver", "bronze"][r.position - 1]}`}>{r.position}</span>
+                        <span className="name min-w-0 flex-1 truncate text-[0.88rem]">{r.player.name}</span>
+                        <span className="num text-[1rem]" style={{ color: "var(--color-acid)" }}>{r.pts}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {mine && mine.pts != null && (
+                  <p className="label mt-2.5" style={{ color: "var(--color-acid)" }}>
+                    You: {mine.pts} pts · {mine.position}{mine.tied ? "=" : ""} of{" "}
+                    {ranked.filter((r) => r.pts != null).length}
+                  </p>
+                )}
+              </Link>
+              <div className="grid grid-cols-2 gap-px border-t border-[var(--color-line)] bg-[var(--color-line)]">
+                <Link href={`/event?e=${live.id}`} className="bg-[var(--color-panel)] py-3 text-center">
+                  <span className="label !text-[0.68rem]" style={{ color: "var(--color-acid)" }}>Enter scores</span>
+                </Link>
+                <Link href={`/live-board?b=${live.shareToken}`} className="bg-[var(--color-panel)] py-3 text-center">
+                  <span className="label !text-[0.68rem]">View board</span>
+                </Link>
               </div>
-              <span className="btn btn-primary !min-h-[2.5rem] !text-[0.8rem]">Open</span>
             </div>
-          </Link>
-        )}
+          );
+        })()}
 
         {!live && (() => {
           const next = select.nextUp(db);

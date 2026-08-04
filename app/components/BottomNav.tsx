@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { Suspense } from "react";
-import { usePathname, useSearchParams } from "next/navigation";
+import { usePathname } from "next/navigation";
 import { useDB, useReady, select } from "@/lib/store";
 
 /**
@@ -20,7 +20,6 @@ function BottomNavInner() {
   const db = useDB();
   const ready = useReady();
   const path = usePathname();
-  const sp = useSearchParams();
 
   // Guest screens keep zero chrome.
   if (path.startsWith("/live-board") || path.startsWith("/scorecard")) return null;
@@ -35,23 +34,6 @@ function BottomNavInner() {
       ? new Date(next.playsOn + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric" })
       : "Today";
 
-  // "Season" points at the society you're LOOKING at, so it never yanks you
-  // sideways into a different society — that reads as "I can't get back".
-  const contextSociety = (() => {
-    if (path.startsWith("/society") || path.startsWith("/new-day")) {
-      const slug = sp.get("s");
-      if (slug) return db.societies.find((x) => x.slug === slug);
-    }
-    if (path.startsWith("/event")) {
-      const ev = db.events.find((x) => x.id === sp.get("e"));
-      if (ev) return db.societies.find((x) => x.id === ev.societyId);
-    }
-    return undefined;
-  })();
-  const seasonSociety =
-    contextSociety ??
-    db.societies.find((x) => select.currentSeason(db, x.id)) ??
-    db.societies[0];
 
   // FIVE slots, ALWAYS, in the same order. Tabs that don't apply right now dim
   // out instead of disappearing — a bar that reshuffles between screens reads
@@ -59,11 +41,10 @@ function BottomNavInner() {
   const items: { href: string; label: string; icon: React.ReactNode; on: boolean; live?: boolean; off?: boolean }[] = [
     { href: "/", label: "Home", icon: <HomeIcon />, on: path === "/" },
     {
-      href: seasonSociety ? `/society?s=${seasonSociety.slug}` : "/",
-      label: "Season",
-      icon: <TrophyIcon />,
-      on: path.startsWith("/society"),
-      off: !seasonSociety,
+      href: "/groups",
+      label: "Groups",
+      icon: <GroupsIcon />,
+      on: path.startsWith("/groups") || path.startsWith("/society"),
     },
     {
       href: dayEvent ? `/event?e=${dayEvent.id}` : "/",
@@ -71,13 +52,6 @@ function BottomNavInner() {
       icon: <FlagIcon />,
       on: path.startsWith("/event"),
       live: Boolean(live),
-      off: !dayEvent,
-    },
-    {
-      href: dayEvent ? `/live-board?b=${dayEvent.shareToken}` : "/",
-      label: "Board",
-      icon: <BoardIcon />,
-      on: false,
       off: !dayEvent,
     },
     { href: "/profile", label: "Profile", icon: <PersonIcon />, on: path.startsWith("/profile") },
@@ -133,15 +107,12 @@ export function BottomNav() {
 function HomeIcon() {
   return <svg {...I}><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /></svg>;
 }
-function TrophyIcon() {
-  return <svg {...I}><path d="M8 21h8" /><path d="M12 17v4" /><path d="M6 3h12v6a6 6 0 0 1-12 0Z" /><path d="M6 5H3v2a3 3 0 0 0 3 3" /><path d="M18 5h3v2a3 3 0 0 1-3 3" /></svg>;
+function GroupsIcon() {
+  return <svg {...I}><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5" /><circle cx="17.5" cy="9.5" r="2.6" /><path d="M16 14.6c3 .3 5.5 2 5.5 4.9" /></svg>;
 }
 function FlagIcon() {
   return <svg {...I}><path d="M5 21V4" /><path d="M5 4c4-2 7 2 14 0v9c-7 2-10-2-14 0" /></svg>;
 }
 function PersonIcon() {
   return <svg {...I}><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" /></svg>;
-}
-function BoardIcon() {
-  return <svg {...I}><rect x="3" y="4" width="18" height="16" rx="1" /><path d="M7 9h6" /><path d="M7 13h8" /><path d="M7 17h4" /></svg>;
 }

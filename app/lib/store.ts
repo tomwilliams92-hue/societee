@@ -21,7 +21,8 @@ import type {
 import { teeById } from "./courses";
 import { courseHandicap, holePoints, playingHandicap } from "./scoring";
 
-const KEY = "societee.v1";
+const KEY = "societee.v2";   // bumped: old demo data was stale-dated and cluttered
+const OLD_KEYS = ["societee.v1"];
 
 export type DB = {
   societies: Society[];
@@ -68,41 +69,21 @@ const id = (() => { let n = 0; return (p: string) => `${p}-${(++n).toString(36)}
 const token = (n = 7) =>
   Array.from({ length: n }, () => "abcdefghijkmnpqrstuvwxyz23456789"[Math.floor(Math.random() * 32)]).join("");
 
-/** Society 1 — a season-long Order of Merit. [name, index, [ [date, courseId, teeId, points, gross] ]] */
-const WANDERERS: [string, number, [string, string, string, number, number][]][] = [
-  ["Alan Merrick", -0.8, [
-    ["2026-07-25", "conwy", "conwy-white", 37, 72], ["2026-07-11", "conwy", "conwy-white", 35, 74],
-    ["2026-06-27", "wallasey", "wallasey-white", 34, 74], ["2026-06-13", "conwy", "conwy-white", 34, 75],
-    ["2026-07-04", "conwy", "conwy-white", 32, 77], ["2026-05-30", "conwy", "conwy-white", 31, 78],
-    ["2026-06-06", "conwy", "conwy-white", 29, 80],
-  ]],
-  ["Neil Sanderson", 7.4, [
-    ["2026-07-25", "conwy", "conwy-white", 38, 79], ["2026-06-27", "wallasey", "wallasey-white", 34, 83],
-    ["2026-07-11", "conwy", "conwy-white", 33, 84], ["2026-06-13", "conwy", "conwy-white", 32, 85],
-    ["2026-05-30", "conwy", "conwy-white", 30, 87], ["2026-07-04", "conwy", "conwy-white", 28, 89],
-  ]],
-  ["Gavin Hollis", 14.6, [
-    ["2026-07-11", "conwy", "conwy-white", 36, 88], ["2026-06-13", "conwy", "conwy-white", 35, 89],
-    ["2026-07-25", "conwy", "conwy-white", 31, 93], ["2026-05-30", "conwy", "conwy-white", 30, 94],
-    ["2026-06-27", "wallasey", "wallasey-white", 27, 98],
-  ]],
-  ["Martin Ashby", 19.9, [
-    ["2026-06-13", "conwy", "conwy-white", 35, 94], ["2026-07-25", "conwy", "conwy-white", 33, 96],
-    ["2026-07-04", "conwy", "conwy-white", 29, 100], ["2026-05-30", "conwy", "conwy-white", 24, 105],
-  ]],
-  ["Ken Baxter", 26.2, [
-    ["2026-07-04", "conwy", "conwy-white", 34, 102], ["2026-06-06", "conwy", "conwy-white", 30, 106],
-    ["2026-07-25", "conwy", "conwy-white", 26, 110],
-  ]],
-];
-
-/** Society 2 — a golf day happening right now. */
-const SWINDLE = [
+/** One society, one live event, one season — a single worked example. */
+const FIELD: [string, number][] = [
   ["Dave Prichard", 12.4], ["Steve Hughes", 18.1], ["Mark Ellis", 8.7],
   ["John Roberts", 24.2], ["Pete Vaughan", 15.0], ["Gareth Lloyd", 6.3],
   ["Ryan Doyle", 20.8], ["Liam Foster", 11.2], ["Chris Nolan", 27.4],
   ["Aled Jones", 9.9], ["Sam Whitfield", 16.6], ["Owen Price", 4.1],
-] as const;
+];
+
+/** Past Saturdays: [daysAgo, points for the 12, in FIELD order (null = didn't play)] */
+const PAST: [number, (number | null)[]][] = [
+  [28, [34, 31, 36, 28, 33, 35, 27, 32, 25, 34, 30, 37]],
+  [21, [31, 35, 33, 30, 29, 38, 31, 28, 27, 32, 26, 34]],
+  [14, [36, 28, 34, 33, 35, 31, null, 30, 29, 27, 33, 32]],
+  [7,  [33, 32, 31, 36, 28, 34, 30, null, 31, 35, 29, 36]],
+];
 
 function seed(): DB {
   const db: DB = {
@@ -110,133 +91,98 @@ function seed(): DB {
     entries: [], rounds: [], holeScores: [], sideComps: [], series: [], cards: {}, me: null,
   };
 
-  /* ---------- Society 1: a season-long Order of Merit across the summer ---- */
-  const wanderers: Society = {
-    id: "soc-wanderers", slug: "fairway-wanderers", name: "Fairway Wanderers",
-    homeClub: "Conwy (Caernarvonshire)", accent: "#0B3D2C", badge: "links-blue", createdAt: "2026-05-28",
+  const today = new Date();
+  const iso = (d: Date) => d.toISOString().slice(0, 10);
+  const daysAgo = (n: number) => { const d = new Date(today); d.setDate(d.getDate() - n); return iso(d); };
+
+  const soc: Society = {
+    id: "soc-demo", slug: "saturday-swindle", name: "Saturday Swindle",
+    homeClub: "Conwy (Caernarvonshire)", accent: "#0B3D2C", badge: "flag-green",
+    createdAt: daysAgo(35),
   };
-  db.societies.push(wanderers);
+  db.societies.push(soc);
+
+  const seasonStart = new Date(today); seasonStart.setDate(seasonStart.getDate() - 35);
   db.seasons.push({
-    id: "sea-2026", societyId: wanderers.id, name: "Summer Order of Merit 2026",
-    startsOn: "2026-05-30", endsOn: "2026-09-30", bestN: 6,
+    id: "sea-demo", societyId: soc.id, name: "Summer standings 2026",
+    startsOn: iso(seasonStart), endsOn: "2026-09-30", bestN: 6,
     prize: "Winner takes the jug", isCurrent: true,
   });
 
-  for (const [name, hcp, rounds] of WANDERERS) {
-    const pid = id("plr");
-    db.players.push({
-      id: pid, societyId: wanderers.id, name,
-      shortName: name.split(" ")[0], handicapIndex: hcp, active: true,
-    });
-    for (const [date, courseId, teeId, points, gross] of rounds) {
-      const t = teeById(teeId)!;
-      db.rounds.push({
-        id: id("rnd"), playerId: pid,
-        eventId: null,                    // an ordinary club round, not a society day
-        courseId, teeId, playedOn: date, format: "stableford",
-        gross, adjustedGross: gross,
-        courseHandicap: playingHandicap(courseHandicap(hcp, t), 95),
-        stableford: points, net: null,
-        source: "manual", verified: false,
-      });
-    }
-  }
-
-  /* -------------- Society 2: a live golf day, 12 players, half in ---------- */
-  const swindle: Society = {
-    id: "soc-swindle", slug: "saturday-swindle", name: "Saturday Swindle",
-    homeClub: "Nomadic", accent: "#0B3D2C", badge: "flag-green", createdAt: "2026-06-14",
-  };
-  db.societies.push(swindle);
-
   const tee = teeById("conwy-white")!;
-  const ev: GolfEvent = {
-    id: "evt-swindle-aug", societyId: swindle.id, courseId: "conwy", teeId: tee.id,
-    // seeded on "today" so the demo always shows a genuinely live day
-    name: "August Meeting", playsOn: new Date().toISOString().slice(0, 10), teeTime: "09:20",
-    format: "stableford", handicapAllowance: 95, status: "live",
-    shareToken: "augmeet", notes: "£10 in the pot. Two-tee start.",
-  };
-  db.events.push(ev);
-
-  // Three fourballs, two-tee start. Each gets its own scoring link.
-  [1, 2, 3].forEach((n) => {
-    db.groups.push({
-      id: id("grp"), eventId: ev.id, groupNo: n,
-      startHole: n === 3 ? 10 : 1, scorerToken: token(6),
-    });
-  });
-
-  const played = [38, 36, 35, 34, 33, 31, 30, 28, null, null, null, null];
-  SWINDLE.forEach(([name, hcp], i) => {
-    const pid = id("plr");
+  FIELD.forEach(([name, hcp]) => {
     db.players.push({
-      id: pid, societyId: swindle.id, name,
+      id: id("plr"), societyId: soc.id, name,
       shortName: name.split(" ")[0], handicapIndex: hcp, active: true,
     });
-    const ph = playingHandicap(courseHandicap(hcp, tee), ev.handicapAllowance);
-    db.entries.push({
-      id: id("ent"), eventId: ev.id, playerId: pid,
-      playingHandicap: ph,
-      groupNo: Math.floor(i / 4) + 1, startHole: i < 8 ? 1 : 10,
-    });
-    const pts = played[i];
-    if (pts != null) {
-      const gross = 36 + ph + tee.par - pts;
-      db.rounds.push({
-        id: id("rnd"), playerId: pid, eventId: ev.id, courseId: "conwy", teeId: tee.id,
-        playedOn: ev.playsOn, format: "stableford",
-        gross, adjustedGross: gross,
-        courseHandicap: ph, stableford: pts, net: gross - ph,
-        source: "live_scoring", verified: false,
-      });
-    }
   });
+  const roster = db.players;
 
-  db.sideComps.push(
-    { id: id("sc"), eventId: ev.id, kind: "ntp", hole: 3, winnerId: db.players.at(-4)!.id, detail: "1.2m" },
-    { id: id("sc"), eventId: ev.id, kind: "longest_drive", hole: 12, winnerId: db.players.at(-3)!.id }
-  );
-
-  /* --------- a completed two-day trip, so the combined board has life ------ */
-  const spring: Series = { id: "srs-spring", societyId: swindle.id, name: "Spring Trip" };
-  db.series.push(spring);
-  const swindlers = db.players.filter((p) => p.societyId === swindle.id);
-  const tripDays: [string, string, string, (number | null)[]][] = [
-    // date, teeId, name, points for the 12 in seed order
-    ["2026-05-09", "stmelyd-white",  "Trip day 1 — St Melyd",
-      [34, 31, 36, 28, 33, 35, 27, 32, 25, 34, 30, 37]],
-    ["2026-05-10", "abergele-white", "Trip day 2 — Abergele",
-      [31, 35, 33, 30, 29, 38, 31, 28, 27, 32, 26, 34]],
-  ];
-  for (const [date, teeId, name, pts] of tripDays) {
-    const t = teeById(teeId)!;
-    const dayEv: GolfEvent = {
-      id: id("evt"), societyId: swindle.id, seriesId: spring.id,
-      courseId: t.courseId, teeId: t.id, name, playsOn: date,
+  // ---- season history: four past Saturdays as completed events ----
+  PAST.forEach(([ago, pts], n) => {
+    const t = tee;
+    const ev: GolfEvent = {
+      id: id("evt"), societyId: soc.id, courseId: "conwy", teeId: t.id,
+      name: `Saturday roll-up ${n + 1}`, playsOn: daysAgo(ago),
       format: "stableford", handicapAllowance: 95, status: "complete",
       shareToken: token(),
     };
-    db.events.push(dayEv);
-    swindlers.forEach((p, i) => {
-      const chD = courseHandicap(p.handicapIndex!, t);
-      const phD = playingHandicap(chD, 95);
+    db.events.push(ev);
+    roster.forEach((p, i) => {
+      const ph = playingHandicap(courseHandicap(p.handicapIndex!, t), 95);
       db.entries.push({
-        id: id("ent"), eventId: dayEv.id, playerId: p.id,
-        playingHandicap: phD, groupNo: Math.floor(i / 4) + 1, startHole: 1,
+        id: id("ent"), eventId: ev.id, playerId: p.id,
+        playingHandicap: ph, groupNo: Math.floor(i / 4) + 1, startHole: 1,
       });
       const pt = pts[i];
       if (pt != null) {
-        const grossD = 36 + phD + t.par - pt;
+        const gross = 36 + ph + t.par - pt;
         db.rounds.push({
-          id: id("rnd"), playerId: p.id, eventId: dayEv.id, courseId: t.courseId,
-          teeId: t.id, playedOn: date, format: "stableford",
-          gross: grossD, adjustedGross: grossD, courseHandicap: phD,
-          stableford: pt, net: grossD - phD, source: "manual", verified: false,
+          id: id("rnd"), playerId: p.id, eventId: ev.id, courseId: "conwy", teeId: t.id,
+          playedOn: ev.playsOn, format: "stableford",
+          gross, adjustedGross: gross, courseHandicap: ph,
+          stableford: pt, net: gross - ph, source: "manual", verified: false,
         });
       }
     });
-  }
+  });
+
+  // ---- TODAY: the live event, half the field in ----
+  const live: GolfEvent = {
+    id: "evt-today", societyId: soc.id, courseId: "conwy", teeId: tee.id,
+    name: "August Meeting", playsOn: iso(today), teeTime: "09:20",
+    format: "stableford", handicapAllowance: 95, status: "live",
+    shareToken: "augmeet", notes: "£10 in the pot. Two-tee start.",
+  };
+  db.events.push(live);
+  [1, 2, 3].forEach((n) => {
+    db.groups.push({
+      id: id("grp"), eventId: live.id, groupNo: n,
+      startHole: n === 3 ? 10 : 1, scorerToken: token(6),
+    });
+  });
+  const todayPts = [38, 36, 35, 34, 33, 31, 30, 28, null, null, null, null];
+  roster.forEach((p, i) => {
+    const ph = playingHandicap(courseHandicap(p.handicapIndex!, tee), 95);
+    db.entries.push({
+      id: id("ent"), eventId: live.id, playerId: p.id,
+      playingHandicap: ph, groupNo: Math.floor(i / 4) + 1, startHole: i < 8 ? 1 : 10,
+    });
+    const pt = todayPts[i];
+    if (pt != null) {
+      const gross = 36 + ph + tee.par - pt;
+      db.rounds.push({
+        id: id("rnd"), playerId: p.id, eventId: live.id, courseId: "conwy", teeId: tee.id,
+        playedOn: live.playsOn, format: "stableford",
+        gross, adjustedGross: gross, courseHandicap: ph,
+        stableford: pt, net: gross - ph, source: "live_scoring", verified: false,
+      });
+    }
+  });
+  db.sideComps.push(
+    { id: id("sc"), eventId: live.id, kind: "ntp", hole: 3, winnerId: roster[8].id, detail: "1.2m" },
+    { id: id("sc"), eventId: live.id, kind: "longest_drive", hole: 12, winnerId: roster[9].id }
+  );
 
   return db;
 }
@@ -250,6 +196,7 @@ function read(): DB {
   if (cache) return cache;
   if (typeof window === "undefined") return (cache = seed());
   try {
+    OLD_KEYS.forEach((k) => window.localStorage.removeItem(k));
     const raw = window.localStorage.getItem(KEY);
     if (raw) {
       cache = migrate(JSON.parse(raw) as Partial<DB>);

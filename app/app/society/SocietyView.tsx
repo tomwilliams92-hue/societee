@@ -84,7 +84,7 @@ export function SocietyView({ slug }: { slug: string }) {
             {([
               {
                 k: "merit" as const,
-                title: "Order of Merit",
+                title: "Season standings",
                 desc: season
                   ? `${season.name} · best ${season.bestN ?? "all"} cards count`
                   : "No season running — start one from Get started",
@@ -138,15 +138,15 @@ export function SocietyView({ slug }: { slug: string }) {
         {tab === "merit" &&
           (season ? (
             <Leaderboard
-              title={season.name}
-              subtitle={`Best ${season.bestN ?? "all"} Stableford cards · ${fmtRange(season.startsOn, season.endsOn)}`}
+              title={`${society.name} — ${season.name}`}
+              subtitle={`Every ${society.name} player · best ${season.bestN ?? "all"} cards count · ${fmtRange(season.startsOn, season.endsOn)}`}
               rows={meritRows}
               unit="points"
               empty="No cards in yet this season."
             />
           ) : (
             <p className="card p-6 text-center text-[var(--color-dim)]">
-              No season running. An Order of Merit totals each player’s best cards across the summer.
+              No season running yet. Season standings total each player’s best cards across the summer — start one from + Create.
             </p>
           ))}
 
