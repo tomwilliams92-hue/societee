@@ -48,7 +48,7 @@ export type DB = {
    * shared database this becomes the claim flow (players.claimed_by) — each
    * mate sets theirs on their own phone and the organiser never types it.
    */
-  me: { name: string; handicapIndex: number | null; homeClub?: string } | null;
+  me: { name: string; handicapIndex: number | null; homeClub?: string; avatar?: string } | null;
 };
 
 /** Older saved state won't have the newer collections. Don't crash on it. */
@@ -521,6 +521,17 @@ export const actions = {
     });
   },
 
+  /** Start a season (Order of Merit). Any previous season stops being current. */
+  createSeason(
+    societyId: string,
+    input: { name: string; startsOn: string; endsOn: string; bestN: number | null; prize?: string }
+  ) {
+    update((db) => {
+      db.seasons.forEach((x) => { if (x.societyId === societyId) x.isCurrent = false; });
+      db.seasons.push({ id: id("sea"), societyId, ...input, isCurrent: true });
+    });
+  },
+
   /**
    * Save a scorecard an organiser has typed in.
    *
@@ -551,7 +562,7 @@ export const actions = {
    * with the same name (case-insensitive). Returns how many rows it updated.
    * Existing cards keep the playing handicap they were played off.
    */
-  setMe(me: { name: string; handicapIndex: number | null; homeClub?: string }): number {
+  setMe(me: { name: string; handicapIndex: number | null; homeClub?: string; avatar?: string }): number {
     let touched = 0;
     update((db) => {
       db.me = me;

@@ -11,10 +11,11 @@ export function Header({ back }: { back?: { href: string; label: string } }) {
           <>
             <Link
               href={back.href}
-              className="flex min-h-[2.4rem] items-center gap-1.5 rounded-[2px] border border-[var(--color-line)] px-3 hover:border-[var(--color-acid)]"
+              className="flex min-h-[2.6rem] items-center gap-1.5 rounded-full border px-3.5"
+              style={{ borderColor: "var(--color-acid)", color: "var(--color-acid)", background: "rgba(47,219,0,0.08)" }}
             >
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18 9 12l6-6" /></svg>
-              <span className="label !text-[0.66rem]" style={{ color: "inherit" }}>{back.label}</span>
+              <span className="label !text-[0.7rem]" style={{ color: "inherit" }}>Back</span>
             </Link>
             <Link href="/" className="flex items-center gap-2">
               <Crest size={22} />
@@ -36,7 +37,7 @@ export function Footer() {
   return (
     <footer className="mt-auto border-t border-[var(--color-line)] py-6">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4">
-        <span className="label">Societee · demo build</span>
+        <span className="label">Societee · demo build · v7</span>
         <span className="label">Run your golf society without the spreadsheets</span>
       </div>
     </footer>

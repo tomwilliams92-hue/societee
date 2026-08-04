@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { Crest } from "@/components/Crest";
 import { ScorecardModal } from "@/components/Scorecard";
 import { useDB, select } from "@/lib/store";
@@ -17,8 +18,12 @@ import { courseById, teeById } from "@/lib/courses";
 export function PublicBoard({ token }: { token: string }) {
   const db = useDB();
   const ev = select.eventByToken(db, token);
+  const router = useRouter();
   const [now, setNow] = useState("");
+  const [canBack, setCanBack] = useState(false);
   const [cardFor, setCardFor] = useState<string | null>(null);
+
+  useEffect(() => setCanBack(window.history.length > 1), []);
 
   useEffect(() => {
     const tick = () =>
@@ -75,6 +80,16 @@ export function PublicBoard({ token }: { token: string }) {
         <header className="rise">
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-2.5">
+              {canBack && (
+                <button
+                  onClick={() => router.back()}
+                  aria-label="Back"
+                  className="grid h-9 w-9 place-items-center rounded-full border"
+                  style={{ borderColor: "var(--color-acid)", color: "var(--color-acid)", background: "rgba(47,219,0,0.08)" }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18 9 12l6-6" /></svg>
+                </button>
+              )}
               <Crest size={26} />
               <span className="label">{society.name}</span>
             </div>

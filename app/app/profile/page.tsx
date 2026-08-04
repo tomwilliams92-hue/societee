@@ -20,6 +20,26 @@ export default function ProfilePage() {
   const [club, setClub] = useState<string | null>(null);
   const [saved, setSaved] = useState<string | null>(null);
 
+  const [avatar, setAvatar] = useState<string | null>(null);
+  const vAvatar = avatar ?? db.me?.avatar ?? null;
+
+  /** Resize to a 192px square centre-crop so localStorage stays light. */
+  const onPick = (file: File) => {
+    const img = new Image();
+    img.onload = () => {
+      const size = 192;
+      const c = document.createElement("canvas");
+      c.width = size; c.height = size;
+      const ctx = c.getContext("2d")!;
+      const m = Math.min(img.width, img.height);
+      ctx.drawImage(img, (img.width - m) / 2, (img.height - m) / 2, m, m, 0, 0, size, size);
+      setAvatar(c.toDataURL("image/jpeg", 0.85));
+      setSaved(null);
+      URL.revokeObjectURL(img.src);
+    };
+    img.src = URL.createObjectURL(file);
+  };
+
   const vName = name ?? db.me?.name ?? "";
   const vHcp = hcp ?? (db.me ? formatHandicap(db.me.handicapIndex) : "");
   const vClub = club ?? db.me?.homeClub ?? "";
@@ -51,6 +71,7 @@ export default function ProfilePage() {
               name: vName.trim(),
               handicapIndex: parseHandicap(vHcp),
               homeClub: vClub.trim() || undefined,
+              avatar: vAvatar ?? undefined,
             });
             setSaved(
               n === 0
@@ -59,6 +80,28 @@ export default function ProfilePage() {
             );
           }}
         >
+          <div className="flex items-center gap-4">
+            {vAvatar ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={vAvatar} alt="" className="rounded-full border-2 object-cover"
+                   style={{ width: "4.2rem", height: "4.2rem", borderColor: "var(--color-acid)" }} />
+            ) : (
+              <span className="grid rounded-full border bg-[var(--color-panel-2)]"
+                    style={{ width: "4.2rem", height: "4.2rem", placeItems: "center", borderColor: "var(--color-line)" }}>
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="var(--color-dim)" strokeWidth="1.8" strokeLinecap="round"><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" /></svg>
+              </span>
+            )}
+            <label className="btn btn-ghost !min-h-[2.4rem] cursor-pointer !text-[0.8rem]">
+              {vAvatar ? "Change photo" : "Add a photo"}
+              <input
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) onPick(f); }}
+              />
+            </label>
+          </div>
+
           <label>
             <span className="label mb-1.5 block">Your name</span>
             <input

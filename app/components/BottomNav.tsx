@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { usePathname } from "next/navigation";
+import { Suspense } from "react";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useDB, useReady, select } from "@/lib/store";
 
 /**
@@ -15,19 +16,35 @@ import { useDB, useReady, select } from "@/lib/store";
  * right now takes up to seven levels ("I literally give up eight times out of
  * ten"). So when a day is live, it's a permanent tab. One tap, from anywhere.
  */
-export function BottomNav() {
+function BottomNavInner() {
   const db = useDB();
   const ready = useReady();
   const path = usePathname();
+  const sp = useSearchParams();
 
   // Guest screens keep zero chrome.
   if (path.startsWith("/live-board") || path.startsWith("/scorecard")) return null;
   if (!ready) return null;
 
   const live = db.events.find((e) => e.status === "live");
-  const liveSociety = live ? db.societies.find((s) => s.id === live.societyId) : undefined;
-  const season = db.societies[0] ? select.currentSeason(db, db.societies[0].id) : undefined;
-  const seasonSociety = season ? db.societies.find((s) => s.id === season.societyId) : db.societies[0];
+
+  // "Season" points at the society you're LOOKING at, so it never yanks you
+  // sideways into a different society — that reads as "I can't get back".
+  const contextSociety = (() => {
+    if (path.startsWith("/society") || path.startsWith("/new-day")) {
+      const slug = sp.get("s");
+      if (slug) return db.societies.find((x) => x.slug === slug);
+    }
+    if (path.startsWith("/event")) {
+      const ev = db.events.find((x) => x.id === sp.get("e"));
+      if (ev) return db.societies.find((x) => x.id === ev.societyId);
+    }
+    return undefined;
+  })();
+  const seasonSociety =
+    contextSociety ??
+    db.societies.find((x) => select.currentSeason(db, x.id)) ??
+    db.societies[0];
 
   const items: { href: string; label: string; icon: React.ReactNode; on: boolean; live?: boolean }[] = [
     { href: "/", label: "Home", icon: <HomeIcon />, on: path === "/" },
@@ -95,6 +112,14 @@ export function BottomNav() {
 }
 
 const I = { width: 21, height: 21, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor", strokeWidth: 1.9, strokeLinecap: "round", strokeLinejoin: "round" } as const;
+
+export function BottomNav() {
+  return (
+    <Suspense fallback={null}>
+      <BottomNavInner />
+    </Suspense>
+  );
+}
 
 function HomeIcon() {
   return <svg {...I}><path d="M3 10.5 12 3l9 7.5" /><path d="M5 9.5V21h14V9.5" /></svg>;
