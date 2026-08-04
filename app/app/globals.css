@@ -107,7 +107,7 @@ header.sticky { padding-top: env(safe-area-inset-top); }
 .card {
   background: var(--color-panel);
   border: 1px solid var(--color-line);
-  border-radius: 2px;
+  border-radius: 14px;
 }
 
 /* Panel with the accent hairline down the left — the "live feed" marker. */
@@ -125,7 +125,7 @@ header.sticky { padding-top: env(safe-area-inset-top); }
 
 /* --------------------------------------------------- THE LEADERBOARD ★ ---- */
 
-.board { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: 2px; }
+.board { background: var(--color-panel); border: 1px solid var(--color-line); border-radius: 14px; overflow: hidden; }
 .board-in { padding: 0; }
 
 .board-row {
@@ -192,13 +192,12 @@ header.sticky { padding-top: env(safe-area-inset-top); }
   gap: 0.5rem;
   min-height: 3rem;
   padding: 0 1.25rem;
-  border-radius: 2px;
+  border-radius: 999px;
   font-family: var(--font-display), sans-serif;
-  font-variation-settings: "wdth" 88;
-  font-weight: 700;
-  font-size: 0.875rem;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
+  font-variation-settings: "wdth" 92;
+  font-weight: 650;
+  font-size: 0.9rem;
+  letter-spacing: 0.01em;
   border: 1px solid transparent;
   cursor: pointer;
   transition: background 0.15s, border-color 0.15s, transform 0.1s;
@@ -217,7 +216,7 @@ header.sticky { padding-top: env(safe-area-inset-top); }
   padding: 0 0.9rem;
   background: var(--color-panel-2);
   border: 1px solid var(--color-line);
-  border-radius: 2px;
+  border-radius: 12px;
   color: var(--color-text);
   font: inherit;
 }
@@ -238,7 +237,7 @@ header.sticky { padding-top: env(safe-area-inset-top); }
   font-weight: 800;
   background: var(--color-panel-2);
   border: 1.5px solid var(--color-line);
-  border-radius: 2px;
+  border-radius: 12px;
   color: var(--color-text);
 }
 .score-input:focus {
@@ -258,7 +257,7 @@ header.sticky { padding-top: env(safe-area-inset-top); }
   place-items: center;
   border: 1px solid var(--color-line);
   background: var(--color-panel-2);
-  border-radius: 2px;
+  border-radius: 14px;
   font-size: 1.5rem;
   font-weight: 700;
   color: var(--color-text);
@@ -271,8 +270,8 @@ header.sticky { padding-top: env(safe-area-inset-top); }
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  padding: 0.28rem 0.6rem;
-  border-radius: 2px;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.1em;
@@ -312,7 +311,7 @@ header.sticky { padding-top: env(safe-area-inset-top); }
   font-variant-numeric: tabular-nums;
   background: var(--color-panel-2);
   color: var(--color-dim);
-  border-radius: 1px;
+  border-radius: 6px;
 }
 .hole-cell.played { background: #12300c; color: var(--color-acid); }
 .hole-cell.blank  { background: var(--color-panel-2); color: #3a444c; }
