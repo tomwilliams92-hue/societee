@@ -19,51 +19,109 @@ both before a scoring link means anything.
 
 ## 1. Supabase — the database (10 minutes)
 
-1. Sign up at **supabase.com** and create a project.
-   - Region: **London (eu-west-2)**. It's the only UK one, and it keeps your
-     players' names and scores under UK jurisdiction, which is the simplest
-     position for UK GDPR.
-   - Save the database password it gives you.
-2. Open the **SQL Editor** in the sidebar, and run these two files from this
-   repo, in order:
-   - `supabase/schema.sql` — every table, the security rules, and the functions
-     the QR code and the scoring links use
-   - `supabase/seed_courses.sql` — Conwy, Bromborough, Wallasey, St Melyd and
-     Abergele, with their real ratings
-3. Go to **Project Settings → API** and copy two things:
-   - the **Project URL**
-   - the **anon public** key (the long one — the `service_role` key is a master
-     key, never put it in the app)
-4. Create `app/.env.local`:
+### 1.1 Make the account
 
-   ```
-   NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
-   NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
-   ```
+Go to **supabase.com** → **Start your project** → sign in with GitHub (you
+already have an account, so this is two clicks and no new password).
+
+### 1.2 Create the project
+
+**New project**, then:
+
+| Field | What to put |
+|---|---|
+| Name | `societee` |
+| Database password | Click **Generate a password**, then **copy it somewhere safe** |
+| Region | **West EU (London)** |
+| Plan | Free |
+
+**Region matters.** London is the only UK one. It keeps your players' names and
+scores under UK jurisdiction, which is the simplest position to be in for UK
+GDPR. Everything else on that screen can stay as it is.
+
+It then takes a minute or two to build. Wait for it to go green.
+
+> The database password isn't the same as the keys in step 1.4 and you won't
+> need it for the app — but save it, because it's a pain to reset later.
+
+### 1.3 Run the two SQL files
+
+Left sidebar → **SQL Editor** → **New query**.
+
+On your Mac, put the first file on the clipboard:
+
+```bash
+pbcopy < ~/Societee/supabase/schema.sql
+```
+
+Paste it into the editor and press **Run** (or ⌘↵). It should say *Success. No
+rows returned* — that's what "it worked" looks like for a file that only creates
+things.
+
+Now the second one, the same way:
+
+```bash
+pbcopy < ~/Societee/supabase/seed_courses.sql
+```
+
+New query → paste → Run.
+
+**Order matters** — the second file fills in tables the first one creates.
+
+What those two files do: the first builds all fifteen tables, the security rules
+that stop one society seeing another's scores, and the functions behind the QR
+code and the scoring links. The second loads Conwy, Bromborough, Wallasey,
+St Melyd and Abergele with their real ratings and scorecards.
+
+> If the first file throws an error, paste the error back to me rather than
+> trying to fix it. It's never been run against a live Postgres, so one or two
+> corrections are expected.
+
+### 1.4 Copy the two keys
+
+Left sidebar → **Project Settings** (the cog) → **API**.
+
+Copy:
+
+1. **Project URL** — looks like `https://abcdefgh.supabase.co`
+2. The **anon** / **public** key — a very long string starting `eyJ...`
+   (newer projects may label this **publishable**)
+
+⚠️ **Do not copy the `service_role` / `secret` key.** That one bypasses every
+security rule in the database. It must never go anywhere near the app or the
+browser.
+
+### 1.5 Give them to the app
+
+Either paste both to me and I'll wire it up, or create the file yourself:
+
+```bash
+cat > ~/Societee/app/.env.local <<'EOF'
+NEXT_PUBLIC_SUPABASE_URL=https://xxxxxxxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=eyJhbGci...
+EOF
+```
 
 The free tier is 500MB of database and 50,000 monthly active users. Fifty
 societies won't trouble it.
 
-**Nothing breaks while you wait.** With no keys the app runs exactly as it does
-now, on local storage, with the demo societies. The keys are the switch.
+**Nothing breaks while you do this.** With no keys the app runs exactly as it
+does now — local storage, demo societies, the lot. The keys are the switch.
 
 ---
 
-## 2. GitHub — somewhere for the code (5 minutes)
+## 2. GitHub — done ✅
 
-Vercel deploys from a repository.
+**github.com/tomwilliams92-hue/societee** — private, already pushed.
 
-1. Create a new **private** repo at github.com — call it `societee`.
-2. From `~/Societee`:
+Nothing to do. From now on, to publish changes:
 
-   ```bash
-   git remote add origin https://github.com/<your-username>/societee.git
-   git branch -M main
-   git push -u origin main
-   ```
+```bash
+cd ~/Societee && git push
+```
 
-`.env.local` is already in `.gitignore`, so your keys stay off GitHub. That's
-deliberate — they go into Vercel separately.
+`.env.local` is in `.gitignore`, so your Supabase keys never reach GitHub —
+they go into Vercel separately in step 3.
 
 ---
 
