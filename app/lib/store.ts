@@ -113,7 +113,7 @@ function seed(): DB {
   /* ---------- Society 1: a season-long Order of Merit across the summer ---- */
   const wanderers: Society = {
     id: "soc-wanderers", slug: "fairway-wanderers", name: "Fairway Wanderers",
-    homeClub: "Conwy (Caernarvonshire)", accent: "#0B3D2C", createdAt: "2026-05-28",
+    homeClub: "Conwy (Caernarvonshire)", accent: "#0B3D2C", badge: "links-blue", createdAt: "2026-05-28",
   };
   db.societies.push(wanderers);
   db.seasons.push({
@@ -145,7 +145,7 @@ function seed(): DB {
   /* -------------- Society 2: a live golf day, 12 players, half in ---------- */
   const swindle: Society = {
     id: "soc-swindle", slug: "saturday-swindle", name: "Saturday Swindle",
-    homeClub: "Nomadic", accent: "#0B3D2C", createdAt: "2026-06-14",
+    homeClub: "Nomadic", accent: "#0B3D2C", badge: "flag-green", createdAt: "2026-06-14",
   };
   db.societies.push(swindle);
 
@@ -309,11 +309,31 @@ export function resetDemo() {
 /* ---------------------------------------------------------------- actions -- */
 
 export const actions = {
-  createSociety(name: string, homeClub?: string) {
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
-    const soc: Society = { id: id("soc"), slug, name, homeClub, accent: "#0B3D2C", createdAt: new Date().toISOString().slice(0, 10) };
-    update((db) => { db.societies.push(soc); });
-    return soc;
+  createSociety(
+    name: string,
+    homeClub?: string,
+    identity?: { badge?: string; crestData?: string }
+  ) {
+    const base = name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+    let slug = base || "society";
+    update((db) => {
+      // slugs are the URL — never let two societies collide on one
+      let n = 2;
+      while (db.societies.some((x) => x.slug === slug)) slug = `${base}-${n++}`;
+      db.societies.push({
+        id: id("soc"), slug, name, homeClub,
+        accent: "#0B3D2C", badge: identity?.badge, crestData: identity?.crestData,
+        createdAt: new Date().toISOString().slice(0, 10),
+      });
+    });
+    return read().societies.find((x) => x.slug === slug)!;
+  },
+
+  setSocietyIdentity(societyId: string, identity: { badge?: string; crestData?: string }) {
+    update((db) => {
+      const soc = db.societies.find((x) => x.id === societyId);
+      if (soc) { soc.badge = identity.badge; soc.crestData = identity.crestData; }
+    });
   },
 
   addPlayer(societyId: string, name: string, handicapIndex: number | null) {
@@ -602,6 +622,13 @@ export const select = {
   liveToday: (db: DB) => {
     const today = new Date().toISOString().slice(0, 10);
     return db.events.find((e) => e.status === "live" && e.playsOn === today);
+  },
+  /** The next scheduled day after today (any society), for "Next up". */
+  nextUp: (db: DB) => {
+    const today = new Date().toISOString().slice(0, 10);
+    return db.events
+      .filter((e) => e.playsOn > today && e.status !== "cancelled" && e.status !== "complete")
+      .sort((a, b) => a.playsOn.localeCompare(b.playsOn))[0];
   },
   entries: (db: DB, eventId: string) => db.entries.filter((e) => e.eventId === eventId),
   roundsForEvent: (db: DB, eventId: string) => db.rounds.filter((r) => r.eventId === eventId),

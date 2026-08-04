@@ -72,6 +72,10 @@ export type Society = {
   name: string;
   homeClub?: string;
   accent?: string;
+  /** id of a built-in badge from the art pack, e.g. "flag-green" */
+  badge?: string;
+  /** an uploaded image (data URL) — wins over `badge` when set */
+  crestData?: string;
   createdAt: string;
 };
 

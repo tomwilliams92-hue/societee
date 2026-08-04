@@ -27,6 +27,13 @@ function BottomNavInner() {
   if (!ready) return null;
 
   const live = select.liveToday(db);
+  const next = live ? undefined : select.nextUp(db);
+  const dayEvent = live ?? next;
+  const dayLabel = live
+    ? "Today"
+    : next
+      ? new Date(next.playsOn + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric" })
+      : "Today";
 
   // "Season" points at the society you're LOOKING at, so it never yanks you
   // sideways into a different society — that reads as "I can't get back".
@@ -59,19 +66,19 @@ function BottomNavInner() {
       off: !seasonSociety,
     },
     {
-      href: live ? `/event?e=${live.id}` : "/",
-      label: "Today",
+      href: dayEvent ? `/event?e=${dayEvent.id}` : "/",
+      label: dayLabel,
       icon: <FlagIcon />,
       on: path.startsWith("/event"),
       live: Boolean(live),
-      off: !live,
+      off: !dayEvent,
     },
     {
-      href: live ? `/live-board?b=${live.shareToken}` : "/",
+      href: dayEvent ? `/live-board?b=${dayEvent.shareToken}` : "/",
       label: "Board",
       icon: <BoardIcon />,
       on: false,
-      off: !live,
+      off: !dayEvent,
     },
     { href: "/profile", label: "Profile", icon: <PersonIcon />, on: path.startsWith("/profile") },
   ];

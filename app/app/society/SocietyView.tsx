@@ -7,11 +7,12 @@ import { Leaderboard, type BoardRow } from "@/components/Leaderboard";
 import { useDB, select, actions } from "@/lib/store";
 import { bestNTotal, formatHandicap, parseHandicap, rank } from "@/lib/scoring";
 import { courseById } from "@/lib/courses";
+import { SocietyBadge } from "@/components/Badge";
 
 export function SocietyView({ slug }: { slug: string }) {
   const db = useDB();
   const society = select.society(db, slug);
-  const [tab, setTab] = useState<"merit" | "events" | "players">("merit");
+  const [tab, setTab] = useState<"menu" | "merit" | "events" | "players">("menu");
 
   if (!society) {
     return (
@@ -67,33 +68,72 @@ export function SocietyView({ slug }: { slug: string }) {
       <Header back={{ href: "/", label: "Societies" }} />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-16">
-        <section className="py-9">
-          <p className="label">{society.homeClub ?? "Society"}</p>
-          <h1 className="display mt-2 text-[clamp(1.7rem,5vw,2.4rem)]">{society.name}</h1>
-          {season && (
-            <p className="mt-3 text-[var(--color-dim)]">
-              {season.name} · best {season.bestN ?? "all"} cards count ·{" "}
-              {fmtRange(season.startsOn, season.endsOn)}
-              {season.prize && <> · <span className="italic">{season.prize}</span></>}
+        <section className="flex items-center gap-4 py-7">
+          <SocietyBadge society={society} size={64} rounded={16} />
+          <div className="min-w-0">
+            <h1 className="display text-[clamp(1.5rem,5.5vw,2.2rem)]">{society.name}</h1>
+            <p className="label mt-1">
+              {society.homeClub ?? "Society"}{season ? ` · ${season.name}` : ""}
             </p>
-          )}
+          </div>
         </section>
 
-        <nav className="mb-6 flex gap-1 border-b border-[var(--color-line)]">
-          {(["merit", "events", "players"] as const).map((t) => (
-            <button
-              key={t}
-              onClick={() => setTab(t)}
-              className="label relative -mb-px px-3.5 py-2.5"
-              style={{
-                color: tab === t ? "var(--color-acid)" : undefined,
-                borderBottom: `2px solid ${tab === t ? "var(--color-acid)" : "transparent"}`,
-              }}
-            >
-              {t === "merit" ? "Order of Merit" : t === "events" ? "days / events" : t}
-            </button>
-          ))}
-        </nav>
+        {/* ------------------------------------------------ section menu -- */}
+        {tab === "menu" && (
+          <div className="grid gap-3 rise">
+            {([
+              {
+                k: "merit" as const,
+                title: "Order of Merit",
+                desc: season
+                  ? `${season.name} · best ${season.bestN ?? "all"} cards count`
+                  : "No season running — start one from Get started",
+                icon: (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-gold)" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round"><path d="M8 21h8" /><path d="M12 17v4" /><path d="M6 3h12v6a6 6 0 0 1-12 0Z" /><path d="M6 5H3v2a3 3 0 0 0 3 3" /><path d="M18 5h3v2a3 3 0 0 1-3 3" /></svg>
+                ),
+                tint: "rgba(245,197,66,0.1)", line: "rgba(245,197,66,0.3)",
+              },
+              {
+                k: "events" as const,
+                title: "Golf days / events",
+                desc: `${events.length} day${events.length === 1 ? "" : "s"}${select.seriesFor(db, society.id).length ? ` · ${select.seriesFor(db, society.id).length} trip` : ""} · create, score, share the board`,
+                icon: (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-acid)" strokeWidth="1.9" strokeLinecap="round"><path d="M5 21V4" /><path d="M5 4c4-2 7 2 14 0v9c-7 2-10-2-14 0" /></svg>
+                ),
+                tint: "rgba(47,219,0,0.08)", line: "rgba(47,219,0,0.3)",
+              },
+              {
+                k: "players" as const,
+                title: "Players",
+                desc: `${players.length} player${players.length === 1 ? "" : "s"} · names and handicaps, no accounts needed`,
+                icon: (
+                  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--color-blue, #4db8ff)" strokeWidth="1.9" strokeLinecap="round"><circle cx="9" cy="8" r="3.5" /><path d="M2.5 20c0-3.5 3-5.5 6.5-5.5s6.5 2 6.5 5.5" /><circle cx="17.5" cy="9.5" r="2.6" /><path d="M16 14.6c3 .3 5.5 2 5.5 4.9" /></svg>
+                ),
+                tint: "rgba(77,184,255,0.08)", line: "rgba(77,184,255,0.3)",
+              },
+            ]).map((m) => (
+              <button key={m.k} className="card flex items-center gap-3.5 p-4 text-left transition-transform hover:-translate-y-0.5"
+                      onClick={() => setTab(m.k)}>
+                <span className="grid shrink-0 place-items-center rounded-[12px]"
+                      style={{ width: "3.1rem", height: "3.1rem", background: m.tint, border: `1px solid ${m.line}` }}>
+                  {m.icon}
+                </span>
+                <span className="min-w-0 flex-1">
+                  <span className="name block text-[1.02rem]">{m.title}</span>
+                  <span className="label mt-0.5 block !normal-case !tracking-normal">{m.desc}</span>
+                </span>
+                <svg className="shrink-0" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-dim)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m9 18 6-6-6-6" /></svg>
+              </button>
+            ))}
+          </div>
+        )}
+
+        {tab !== "menu" && (
+          <button className="label mb-4 inline-flex items-center gap-1.5 !text-[0.7rem]" onClick={() => setTab("menu")}>
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18 9 12l6-6" /></svg>
+            All sections
+          </button>
+        )}
 
         {tab === "merit" &&
           (season ? (

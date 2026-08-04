@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Header, Footer } from "@/components/Chrome";
-import { Crest } from "@/components/Crest";
-import { useDB, useReady, select, actions, resetDemo } from "@/lib/store";
+import { SocietyBadge } from "@/components/Badge";
+import { useRouter } from "next/navigation";
+import { useDB, useReady, select, resetDemo } from "@/lib/store";
 import { bestNTotal } from "@/lib/scoring";
 
 /**
@@ -14,10 +15,22 @@ import { bestNTotal } from "@/lib/scoring";
  */
 export default function Home() {
   const db = useDB();
+  const router = useRouter();
   const ready = useReady();
-  const [creating, setCreating] = useState(false);
-  const [name, setName] = useState("");
+  const [joining, setJoining] = useState(false);
+  const [code, setCode] = useState("");
+  const [codeErr, setCodeErr] = useState<string | null>(null);
   const me = db.me;
+
+  const joinWithCode = () => {
+    const c = code.trim();
+    if (!c) return;
+    const ev = db.events.find((e) => e.shareToken === c);
+    if (ev) { router.push(`/live-board?b=${c}`); return; }
+    const g = db.groups.find((x) => x.scorerToken === c);
+    if (g) { router.push(`/scorecard?g=${c}`); return; }
+    setCodeErr("Code not recognised on this phone. Cross-phone codes arrive with shared accounts — for now, open the link you were sent.");
+  };
 
   const live = select.liveToday(db);
   const liveSoc = live ? db.societies.find((s) => s.id === live.societyId) : undefined;
@@ -83,32 +96,57 @@ export default function Home() {
           </Link>
         )}
 
-        {/* ------------------------------------------------- societies ----- */}
-        <div className="mb-3 flex items-baseline justify-between">
-          <h2 className="label !text-[0.75rem]">Your societies</h2>
-          <button className="label !text-[0.7rem] underline underline-offset-4" onClick={() => setCreating((v) => !v)}>
-            {creating ? "Cancel" : "+ New society"}
+        {!live && (() => {
+          const next = select.nextUp(db);
+          if (!next) return null;
+          const soc = db.societies.find((x) => x.id === next.societyId);
+          return (
+            <Link href={`/event?e=${next.id}`} className="card feed mb-7 block p-4 rise">
+              <div className="flex items-center justify-between gap-3">
+                <span className="chip chip-acid">Next up</span>
+                <span className="label">
+                  {new Date(next.playsOn + "T12:00:00").toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" })}
+                </span>
+              </div>
+              <div className="mt-2.5 flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="display truncate text-[1.2rem]">{next.name}</h3>
+                  <p className="label mt-1">{soc?.name}</p>
+                </div>
+                <span className="btn btn-ghost !min-h-[2.4rem] !text-[0.78rem]">Open</span>
+              </div>
+            </Link>
+          );
+        })()}
+
+        {/* ------------------------------------------------- get started --- */}
+        <div className="mb-7 grid grid-cols-2 gap-2">
+          <Link href="/new-day" className="btn btn-primary !min-h-[3.2rem]">+ Create</Link>
+          <button className="btn btn-ghost !min-h-[3.2rem]" onClick={() => { setJoining((v) => !v); setCodeErr(null); }}>
+            Join with a code
           </button>
         </div>
-
-        {creating && (
-          <form
-            className="card mb-4 flex flex-wrap items-end gap-3 p-4"
-            onSubmit={(e) => {
-              e.preventDefault();
-              if (!name.trim()) return;
-              actions.createSociety(name.trim());
-              setName("");
-              setCreating(false);
-            }}
-          >
-            <label className="min-w-[14rem] flex-1">
-              <span className="label mb-1.5 block">Society name</span>
-              <input className="field" autoFocus placeholder="e.g. Weekend Dogs" value={name} onChange={(e) => setName(e.target.value)} />
+        {joining && (
+          <form className="card mb-7 grid gap-3 p-4 rise"
+                onSubmit={(e) => { e.preventDefault(); joinWithCode(); }}>
+            <label>
+              <span className="label mb-1.5 block">Invite code</span>
+              <input className="field mono" autoFocus placeholder="e.g. augmeet"
+                     value={code} onChange={(e) => { setCode(e.target.value); setCodeErr(null); }} />
             </label>
-            <button className="btn btn-primary" type="submit">Create</button>
+            <div className="flex items-center gap-3">
+              <button className="btn btn-primary" type="submit">Join</button>
+              <span className="label !normal-case !tracking-normal">
+                Or scan the day’s QR code with your camera.
+              </span>
+            </div>
+            {codeErr && <p className="label !normal-case !tracking-normal" style={{ color: "var(--color-live)" }}>{codeErr}</p>}
           </form>
         )}
+
+        {/* ------------------------------------------------- societies ----- */}
+        <h2 className="label mb-3 !text-[0.75rem]">Your societies</h2>
+
 
         <div className="grid gap-3 sm:grid-cols-2">
           {db.societies.map((s, i) => {
@@ -140,12 +178,7 @@ export default function Home() {
                 className="card flex items-center gap-3.5 p-3.5 transition-transform hover:-translate-y-0.5 rise"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
-                <span
-                  className="grid shrink-0 place-items-center rounded-[12px]"
-                  style={{ width: "3.4rem", height: "3.4rem", background: "rgba(47,219,0,0.1)", border: "1px solid rgba(47,219,0,0.3)" }}
-                >
-                  <Crest size={30} />
-                </span>
+                <SocietyBadge society={s} size={54} rounded={12} />
                 <span className="min-w-0 flex-1">
                   <span className="name block truncate text-[1.02rem]">{s.name}</span>
                   <span className="label mt-0.5 block">
@@ -165,7 +198,7 @@ export default function Home() {
         {db.societies.length === 0 && ready && (
           <div className="card p-6 text-center">
             <p className="text-[0.95rem]">Start your first society and we’ll set it up properly.</p>
-            <button className="btn btn-primary mt-4" onClick={() => setCreating(true)}>New society</button>
+            <Link href="/new-day" className="btn btn-primary mt-4 inline-flex">Get started</Link>
           </div>
         )}
 

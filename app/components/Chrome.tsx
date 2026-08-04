@@ -37,7 +37,7 @@ export function Footer() {
   return (
     <footer className="mt-auto border-t border-[var(--color-line)] py-6">
       <div className="mx-auto flex max-w-5xl flex-wrap items-center justify-between gap-3 px-4">
-        <span className="label">Societee · demo build · v8</span>
+        <span className="label">Societee · demo build · v9</span>
         <span className="label">Run your golf society without the spreadsheets</span>
       </div>
     </footer>
