@@ -189,6 +189,17 @@ create table events (
 );
 create index on events (society_id, plays_on desc);
 
+-- A fourball. One phone in the group does the scoring, via scorer_token.
+-- start_hole lives here, not on the entry: two-tee starts are per group.
+create table event_groups (
+  id           uuid primary key default gen_random_uuid(),
+  event_id     uuid not null references events on delete cascade,
+  group_no     smallint not null,
+  start_hole   smallint not null default 1,
+  scorer_token text not null unique default encode(gen_random_bytes(9), 'base64'),
+  unique (event_id, group_no)
+);
+
 -- Who's playing, off what, in which group, from which tee
 create table event_entries (
   id             uuid primary key default gen_random_uuid(),
@@ -355,3 +366,126 @@ returns jsonb language sql stable security definer set search_path = public as $
 $$;
 
 grant execute on function public_leaderboard(text) to anon, authenticated;
+
+-- ---------------------------------------------------------------------------
+-- SCORER ACCESS — a fourball keeping the card, with no account.
+--
+--   The group's token is the credential. It grants exactly two things: read
+--   your own group, and write a hole score for someone IN that group. It is
+--   not a login, it cannot see another group, and it cannot touch anything
+--   else. Anonymous users get no table grants at all — only these functions.
+-- ---------------------------------------------------------------------------
+
+create or replace function scorer_group(token text)
+returns jsonb language sql stable security definer set search_path = public as $$
+  select jsonb_build_object(
+    'group',   to_jsonb(g) - 'scorer_token',
+    'event',   to_jsonb(e) - 'share_token',
+    'course',  to_jsonb(c),
+    'tee',     to_jsonb(t),
+    'players', coalesce((
+      select jsonb_agg(jsonb_build_object(
+        'player_id', p.id, 'name', p.name, 'short_name', p.short_name,
+        'playing_handicap', ee.playing_handicap,
+        'holes', coalesce((
+          select jsonb_agg(jsonb_build_object('hole', hs.hole, 'strokes', hs.strokes, 'points', hs.points))
+          from rounds r join hole_scores hs on hs.round_id = r.id
+          where r.event_id = e.id and r.player_id = p.id
+        ), '[]'::jsonb)
+      ) order by p.name)
+      from event_entries ee join players p on p.id = ee.player_id
+      where ee.event_id = e.id and ee.group_no = g.group_no
+    ), '[]'::jsonb)
+  )
+  from event_groups g
+  join events e   on e.id = g.event_id
+  left join courses c on c.id = e.course_id
+  left join tees t    on t.id = e.tee_id
+  where g.scorer_token = token and e.status = 'live';
+$$;
+
+/*
+ * Write one hole for one player, authorised only by the group's token.
+ *
+ * Points are computed HERE from the stored card, never trusted from the
+ * client — otherwise anyone with a scoring link could post themselves 40
+ * points. The running Stableford and gross on the round are recomputed from
+ * every hole entered, so a corrected hole corrects the total.
+ */
+create or replace function score_hole(
+  token text, p_player_id uuid, p_hole smallint, p_strokes smallint
+) returns void language plpgsql security definer set search_path = public as $$
+declare
+  v_event    events%rowtype;
+  v_group    event_groups%rowtype;
+  v_entry    event_entries%rowtype;
+  v_hole     holes%rowtype;
+  v_round_id uuid;
+  v_ph       smallint;
+  v_shots    smallint;
+  v_points   smallint;
+begin
+  select g.* into v_group from event_groups g where g.scorer_token = token;
+  if not found then raise exception 'unknown scoring link'; end if;
+
+  select e.* into v_event from events e where e.id = v_group.event_id;
+  if v_event.status <> 'live' then raise exception 'this day is not live'; end if;
+
+  -- the player must be in THIS group
+  select ee.* into v_entry from event_entries ee
+   where ee.event_id = v_event.id and ee.player_id = p_player_id
+     and ee.group_no = v_group.group_no;
+  if not found then raise exception 'that player is not in this group'; end if;
+
+  select h.* into v_hole from holes h where h.tee_id = v_event.tee_id and h.hole = p_hole;
+  if not found then raise exception 'no scorecard for this tee'; end if;
+
+  v_ph := coalesce(v_entry.playing_handicap, 0);
+
+  select r.id into v_round_id from rounds r
+   where r.event_id = v_event.id and r.player_id = p_player_id;
+  if v_round_id is null then
+    insert into rounds (player_id, event_id, course_id, tee_id, played_on, format,
+                        course_handicap, source, verified)
+    values (p_player_id, v_event.id, v_event.course_id, v_event.tee_id, v_event.plays_on,
+            v_event.format, v_ph, 'live_scoring', false)
+    returning id into v_round_id;
+  end if;
+
+  delete from hole_scores where round_id = v_round_id and hole = p_hole;
+
+  if p_strokes is not null and p_strokes > 0 then
+    -- strokes received: whole passes of 18, plus one on the hardest holes
+    v_shots := (v_ph / 18) + case when v_hole.stroke_index <= (v_ph % 18) then 1 else 0 end;
+    if v_ph < 0 then
+      v_shots := case when (19 - v_hole.stroke_index) <= abs(v_ph) then -1 else 0 end;
+    end if;
+    v_points := greatest(0, v_hole.par - (p_strokes - v_shots) + 2)::smallint;
+    insert into hole_scores (round_id, hole, strokes, points)
+    values (v_round_id, p_hole, p_strokes, v_points);
+  end if;
+
+  -- sum() returns bigint, so cast back explicitly rather than relying on an
+  -- implicit assignment cast into smallint columns
+  update rounds r set
+    gross           = s.strokes,
+    adjusted_gross  = s.strokes,
+    stableford      = s.points,
+    net             = case when s.strokes is null then null else (s.strokes - v_ph)::smallint end,
+    course_handicap = v_ph
+  from (
+    select nullif(sum(strokes), 0)::smallint as strokes,
+           sum(points)::smallint             as points
+    from hole_scores where round_id = v_round_id
+  ) s
+  where r.id = v_round_id;
+end;
+$$;
+
+grant execute on function scorer_group(text)                        to anon, authenticated;
+grant execute on function score_hole(text, uuid, smallint, smallint) to anon, authenticated;
+
+alter table event_groups enable row level security;
+create policy "organisers manage groups" on event_groups for all using (
+  exists (select 1 from events e where e.id = event_id and can_organise(e.society_id))
+);
