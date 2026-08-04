@@ -7,7 +7,7 @@ import { QRCodeSVG } from "qrcode.react";
 import { Header, Footer, SectionTitle } from "@/components/Chrome";
 import { Leaderboard, type BoardRow } from "@/components/Leaderboard";
 import { useDB, select, actions } from "@/lib/store";
-import { formatPlayingHandicap, rank } from "@/lib/scoring";
+import { courseHandicap, formatHandicap, formatPlayingHandicap, rank } from "@/lib/scoring";
 import { courseById, teeById } from "@/lib/courses";
 
 export function EventView({ eventId }: { eventId: string }) {
@@ -15,6 +15,7 @@ export function EventView({ eventId }: { eventId: string }) {
   const router = useRouter();
   const ev = select.event(db, eventId);
   const [origin, setOrigin] = useState("");
+  const [showHcp, setShowHcp] = useState<string | null>(null);
 
   useEffect(() => setOrigin(window.location.origin), []);
 
@@ -79,7 +80,7 @@ export function EventView({ eventId }: { eventId: string }) {
               <span className="chip chip-live"><span className="pulse" /> Live</span>
             )}
           </div>
-          <h1 className="display mt-2 text-[clamp(2.1rem,6.5vw,3.2rem)]">{ev.name}</h1>
+          <h1 className="display mt-2 text-[clamp(1.7rem,5vw,2.4rem)]">{ev.name}</h1>
           <p className="mt-3 text-[var(--color-dim)]">
             {course?.clubName ?? "Course TBC"}
             {tee && <> · {tee.name} tees · par {tee.par} · CR {tee.cr} / slope {tee.slope}</>}
@@ -99,14 +100,22 @@ export function EventView({ eventId }: { eventId: string }) {
               {entries.map((en) => {
                 const player = db.players.find((p) => p.id === en.playerId)!;
                 const round = rounds.find((r) => r.playerId === en.playerId);
+                const open = showHcp === en.id;
                 return (
-                  <div key={en.id} className="flex items-center gap-3 px-4 py-3">
+                  <div key={en.id} className="px-4 py-3">
+                  <div className="flex items-center gap-3">
                     <div className="min-w-0 flex-1">
-                      <span className="block truncate font-medium">{player.name}</span>
-                      <span className="label">
-                        off {formatPlayingHandicap(en.playingHandicap)} · group {en.groupNo} · from{" "}
-                        {en.startHole}
-                      </span>
+                      <span className="block truncate text-[0.95rem] font-medium">{player.name}</span>
+                      <button
+                        className="label text-left"
+                        onClick={() => setShowHcp(open ? null : en.id)}
+                        aria-expanded={open}
+                        title="How this playing handicap was worked out"
+                      >
+                        off {formatPlayingHandicap(en.playingHandicap)}{" "}
+                        <span style={{ color: "var(--color-acid)" }}>ⓘ</span> · group {en.groupNo} ·
+                        from {en.startHole}
+                      </button>
                     </div>
 
                     <label className="text-center">
@@ -147,6 +156,22 @@ export function EventView({ eventId }: { eventId: string }) {
                     >
                       ×
                     </button>
+                  </div>
+
+                  {/* The dispute-killer: show the working, not just the answer.
+                      (Squabbit does this behind an info icon and it's their
+                      single best idea — nobody argues with arithmetic.) */}
+                  {open && tee && player.handicapIndex != null && (
+                    <p className="mono mt-2 border-t border-[var(--line-soft)] pt-2 text-[0.72rem] leading-relaxed text-[var(--color-dim)]">
+                      Index {formatHandicap(player.handicapIndex)} × slope {tee.slope}/113 + (CR{" "}
+                      {tee.cr} − par {tee.par}) = course handicap{" "}
+                      {formatPlayingHandicap(courseHandicap(player.handicapIndex, tee))} · ×{" "}
+                      {ev.handicapAllowance}% ={" "}
+                      <span style={{ color: "var(--color-acid)" }}>
+                        playing handicap {formatPlayingHandicap(en.playingHandicap)}
+                      </span>
+                    </p>
+                  )}
                   </div>
                 );
               })}
@@ -259,7 +284,7 @@ export function EventView({ eventId }: { eventId: string }) {
             <div className="card p-5 text-center">
               <div className="mx-auto inline-block rounded-[3px] bg-white p-3 shadow-inner">
                 {origin && (
-                  <QRCodeSVG value={shareUrl} size={148} level="M" bgColor="#ffffff" fgColor="#0b3d2c" />
+                  <QRCodeSVG value={shareUrl} size={148} level="M" bgColor="#ffffff" fgColor="#06080a" />
                 )}
               </div>
               <p className="mt-4 text-[0.875rem] leading-relaxed text-[var(--color-dim)]">

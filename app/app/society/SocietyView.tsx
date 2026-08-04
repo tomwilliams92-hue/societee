@@ -69,7 +69,7 @@ export function SocietyView({ slug }: { slug: string }) {
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-16">
         <section className="py-9">
           <p className="label">{society.homeClub ?? "Society"}</p>
-          <h1 className="display mt-2 text-[clamp(2.2rem,7vw,3.4rem)]">{society.name}</h1>
+          <h1 className="display mt-2 text-[clamp(1.7rem,5vw,2.4rem)]">{society.name}</h1>
           {season && (
             <p className="mt-3 text-[var(--color-dim)]">
               {season.name} · best {season.bestN ?? "all"} cards count ·{" "}

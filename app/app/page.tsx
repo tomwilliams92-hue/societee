@@ -21,19 +21,46 @@ export default function Home() {
         <section className="py-12 sm:py-16">
           <p className="label rise">Est. on the first tee</p>
           <h1
-            className="display mt-3 max-w-[15ch] text-[clamp(2.6rem,8vw,4.6rem)] rise"
+            className="display mt-3 max-w-[15ch] text-[clamp(1.9rem,5.5vw,2.9rem)] rise"
             style={{ animationDelay: "60ms" }}
           >
             Run your golf society without the spreadsheets.
           </h1>
           <p
-            className="mt-5 max-w-[52ch] text-[1.0625rem] leading-relaxed text-[var(--color-dim)] rise"
+            className="mt-4 max-w-[52ch] text-[0.95rem] leading-relaxed text-[var(--color-dim)] rise"
             style={{ animationDelay: "120ms" }}
           >
             Create a society, add your players, run the day. The leaderboard goes up on a QR
             code at the first tee — no app to download and no sign-up for anyone but you.
           </p>
         </section>
+
+        {/* ------------------------------------------------- live right now -- */}
+        {(() => {
+          const live = db.events.find((e) => e.status === "live");
+          if (!live) return null;
+          const soc = db.societies.find((s) => s.id === live.societyId);
+          const inCount = select.roundsForEvent(db, live.id).length;
+          const field = select.entries(db, live.id).length;
+          return (
+            <Link
+              href={`/event?e=${live.id}`}
+              className="card feed mb-8 block p-4 transition-transform hover:-translate-y-0.5 rise"
+            >
+              <div className="flex items-center justify-between gap-3">
+                <span className="chip chip-live"><span className="pulse" /> Live now</span>
+                <span className="label">{inCount} of {field} in</span>
+              </div>
+              <div className="mt-2.5 flex items-end justify-between gap-3">
+                <div className="min-w-0">
+                  <h3 className="display truncate text-[1.3rem]">{live.name}</h3>
+                  <p className="label mt-1">{soc?.name}</p>
+                </div>
+                <span className="btn btn-primary !min-h-[2.4rem] !text-[0.75rem]">Open</span>
+              </div>
+            </Link>
+          );
+        })()}
 
         {/* --------------------------------------------------- societies -- */}
         <SectionTitle
@@ -109,7 +136,7 @@ export default function Home() {
               >
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0">
-                    <h3 className="name truncate text-[1.3rem] leading-tight">{s.name}</h3>
+                    <h3 className="name truncate text-[1.1rem] leading-tight">{s.name}</h3>
                     <p className="label mt-1">{s.homeClub ?? "No home club"}</p>
                   </div>
                   <Crest size={30} className="shrink-0 opacity-90" />
@@ -141,10 +168,10 @@ export default function Home() {
               ["Enter the scores", "Type a gross, get Stableford. The board updates as you go."],
             ].map(([t, d], i) => (
               <li key={t} className="card p-4">
-                <span className="num text-[1.6rem] leading-none" style={{ color: "var(--color-acid)" }}>
+                <span className="num text-[1.25rem] leading-none" style={{ color: "var(--color-acid)" }}>
                   {String(i + 1).padStart(2, "0")}
                 </span>
-                <h4 className="name mt-2 text-[1.05rem]">{t}</h4>
+                <h4 className="name mt-2 text-[0.95rem]">{t}</h4>
                 <p className="mt-1.5 text-[0.875rem] leading-relaxed text-[var(--color-dim)]">{d}</p>
               </li>
             ))}

@@ -84,7 +84,7 @@ export function PublicBoard({ token }: { token: string }) {
             </div>
           </div>
 
-          <h1 className="display mt-4 text-[clamp(2.2rem,9vw,3.4rem)]">{ev.name}</h1>
+          <h1 className="display mt-4 text-[clamp(1.7rem,6vw,2.5rem)]">{ev.name}</h1>
           <p className="label mt-2">
             {course?.name} · {tee?.name} · Par {tee?.par} · {started} of {entries.length} away
           </p>

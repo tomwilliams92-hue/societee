@@ -66,7 +66,7 @@ export function GroupScorer({ token }: { token: string }) {
         </button>
         <div className="text-center">
           <div className="label">Hole</div>
-          <div className="num text-[2.6rem] leading-none">{current}</div>
+          <div className="num text-[2.1rem] leading-none">{current}</div>
           <div className="label mt-1">
             Par {info.par} · SI {info.strokeIndex}
           </div>
@@ -74,6 +74,27 @@ export function GroupScorer({ token }: { token: string }) {
         <button className="step" onClick={() => go(current + 1)} aria-label="Next hole">
           ›
         </button>
+      </div>
+
+      {/* Card overview: one cell per hole, lit when the whole group is in.
+          Tap any cell to jump — no paging through nine holes to fix the 3rd. */}
+      <div className="holes mt-2">
+        {card.map((h) => {
+          const complete = players.length > 0 && players.every((p) =>
+            select.holesFor(db, ev.id, p.player.id).some((x) => x.hole === h.hole)
+          );
+          return (
+            <button
+              key={h.hole}
+              className={`hole-cell ${complete ? "played" : "blank"}`}
+              style={h.hole === current ? { outline: "1.5px solid var(--color-acid)" } : undefined}
+              onClick={() => setHole(h.hole)}
+              aria-label={`Go to hole ${h.hole}`}
+            >
+              {h.hole}
+            </button>
+          );
+        })}
       </div>
 
       {/* ----------------------------------------------------- the four -- */}
@@ -112,7 +133,7 @@ export function GroupScorer({ token }: { token: string }) {
 
                 <div className="grid flex-1 place-items-center">
                   <span
-                    className="num text-[2.1rem] leading-none"
+                    className="num text-[1.9rem] leading-none"
                     style={{ color: strokes == null ? "var(--color-line)" : "var(--color-text)" }}
                   >
                     {strokes ?? "–"}

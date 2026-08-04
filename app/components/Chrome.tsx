@@ -37,7 +37,7 @@ export function Footer() {
 export function SectionTitle({ children, aside }: { children: React.ReactNode; aside?: React.ReactNode }) {
   return (
     <div className="mb-3 flex items-end justify-between gap-4 border-b border-[var(--color-line)] pb-2">
-      <h2 className="display text-[1.5rem]">{children}</h2>
+      <h2 className="display text-[1.15rem]">{children}</h2>
       {aside}
     </div>
   );

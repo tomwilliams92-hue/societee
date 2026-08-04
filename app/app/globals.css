@@ -14,8 +14,8 @@
   --color-line:     #232c33;
   --color-text:     #f1f5f2;
   --color-dim:      #8b968f;
-  --color-acid:     #c8ff3c;   /* the accent. use it sparingly and it shouts */
-  --color-acid-dim: #8fae2c;
+  --color-acid:     #2fdb00;   /* the accent. use it sparingly and it shouts */
+  --color-acid-dim: #25a802;
   --color-live:     #ff4438;
   --color-under:    #4ad6a0;   /* better than par */
 
@@ -41,7 +41,7 @@ body {
   -webkit-tap-highlight-color: transparent;
   /* faint broadcast grain so flat blacks don't band on OLED */
   background-image:
-    radial-gradient(ellipse 60rem 30rem at 50% -8%, rgba(200, 255, 60, 0.055), transparent 70%),
+    radial-gradient(ellipse 60rem 30rem at 50% -8%, rgba(47, 219, 0, 0.055), transparent 70%),
     url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)' opacity='.035'/%3E%3C/svg%3E");
 }
 
@@ -143,7 +143,7 @@ header.sticky { padding-top: env(safe-area-inset-top); }
   font-variant-numeric: tabular-nums;
   font-variation-settings: "wdth" 80;
   font-weight: 700;
-  font-size: 0.9rem;
+  font-size: 0.78rem;
   color: var(--color-dim);
 }
 .board-row .nm {
@@ -151,22 +151,22 @@ header.sticky { padding-top: env(safe-area-inset-top); }
   font-variation-settings: "wdth" 88;
   font-weight: 650;
   text-transform: uppercase;
-  font-size: 1.02rem;
-  letter-spacing: 0.006em;
+  font-size: 0.92rem;
+  letter-spacing: 0.008em;
   color: var(--color-text);
 }
 .board-row .pts {
   font-variant-numeric: tabular-nums;
   font-variation-settings: "wdth" 82;
   font-weight: 800;
-  font-size: 1.65rem;
+  font-size: 1.3rem;
   line-height: 1;
-  letter-spacing: -0.035em;
+  letter-spacing: -0.03em;
 }
 
 /* Leader gets the accent and a lit left edge. */
 .board-row.lead {
-  background: linear-gradient(90deg, rgba(200, 255, 60, 0.09), transparent 55%);
+  background: linear-gradient(90deg, rgba(47, 219, 0, 0.09), transparent 55%);
 }
 .board-row.lead::before {
   content: "";
@@ -206,7 +206,7 @@ header.sticky { padding-top: env(safe-area-inset-top); }
 .btn:active { transform: translateY(1px); }
 
 .btn-primary { background: var(--color-acid); color: #06080a; }
-.btn-primary:hover { background: #d9ff70; }
+.btn-primary:hover { background: #4dee1f; }
 
 .btn-ghost { background: transparent; border-color: var(--color-line); color: var(--color-text); }
 .btn-ghost:hover { background: var(--color-panel-2); border-color: #36424b; }
@@ -224,7 +224,7 @@ header.sticky { padding-top: env(safe-area-inset-top); }
 .field:focus {
   outline: none;
   border-color: var(--color-acid);
-  box-shadow: 0 0 0 3px rgba(200, 255, 60, 0.16);
+  box-shadow: 0 0 0 3px rgba(47, 219, 0, 0.16);
 }
 
 /* Big thumbable stroke box — used one-handed, in wind, on a fairway. */
@@ -244,7 +244,7 @@ header.sticky { padding-top: env(safe-area-inset-top); }
 .score-input:focus {
   outline: none;
   border-color: var(--color-acid);
-  box-shadow: 0 0 0 3px rgba(200, 255, 60, 0.18);
+  box-shadow: 0 0 0 3px rgba(47, 219, 0, 0.18);
 }
 .score-input::-webkit-outer-spin-button,
 .score-input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
@@ -286,9 +286,9 @@ header.sticky { padding-top: env(safe-area-inset-top); }
   background: rgba(255, 68, 56, 0.1);
 }
 .chip-acid {
-  border-color: rgba(200, 255, 60, 0.4);
+  border-color: rgba(47, 219, 0, 0.4);
   color: var(--color-acid);
-  background: rgba(200, 255, 60, 0.08);
+  background: rgba(47, 219, 0, 0.08);
 }
 
 .pulse {
@@ -314,7 +314,7 @@ header.sticky { padding-top: env(safe-area-inset-top); }
   color: var(--color-dim);
   border-radius: 1px;
 }
-.hole-cell.played { background: #1d2a17; color: var(--color-acid); }
+.hole-cell.played { background: #12300c; color: var(--color-acid); }
 .hole-cell.blank  { background: var(--color-panel-2); color: #3a444c; }
 
 /* -------------------------------------------------------------- motion -- */
@@ -327,7 +327,7 @@ header.sticky { padding-top: env(safe-area-inset-top); }
 
 /* A score that just changed flashes the accent, like a live scoreboard */
 @keyframes flash {
-  0%   { background: rgba(200, 255, 60, 0.25); }
+  0%   { background: rgba(47, 219, 0, 0.25); }
   100% { background: transparent; }
 }
 .flash { animation: flash 0.9s ease-out both; }
