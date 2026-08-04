@@ -2,6 +2,9 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, Azeret_Mono } from "next/font/google";
 import "./globals.css";
 
+/** Set only for the GitHub Pages build, which serves from /<repo>/. */
+const BASE = process.env.PAGES_BASE_PATH ?? "";
+
 /**
  * One family doing all the work, using its width axis: condensed and heavy for
  * headlines and scores, near-normal for body. That width shift is what makes
@@ -33,8 +36,8 @@ export const metadata: Metadata = {
   },
   formatDetection: { telephone: false },
   icons: {
-    icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }],
-    apple: [{ url: "/apple-icon.png", sizes: "180x180", type: "image/png" }],
+    icon: [{ url: `${BASE}/icon-192.png`, sizes: "192x192", type: "image/png" }],
+    apple: [{ url: `${BASE}/apple-icon.png`, sizes: "180x180", type: "image/png" }],
   },
 };
 
