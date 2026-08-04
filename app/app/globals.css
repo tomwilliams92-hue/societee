@@ -317,6 +317,36 @@ header.sticky { padding-top: env(safe-area-inset-top); }
 .hole-cell.played { background: #12300c; color: var(--color-acid); }
 .hole-cell.blank  { background: var(--color-panel-2); color: #3a444c; }
 
+/* ---------------------------------------------- scorecard notation ------ */
+/* The marks every golfer already reads: circle birdie, double-circle eagle,
+   square bogey, double-square double or worse. Par is unmarked. */
+
+.mk {
+  width: 1.9rem;
+  height: 1.9rem;
+  display: grid;
+  place-items: center;
+  font-variant-numeric: tabular-nums;
+  font-weight: 750;
+  font-size: 0.92rem;
+  margin: 0 auto;
+}
+.mk-birdie { border: 1.5px solid var(--color-acid); border-radius: 999px; color: var(--color-acid); }
+.mk-eagle  { border: 1.5px solid var(--color-acid); border-radius: 999px; color: var(--color-acid);
+             box-shadow: 0 0 0 2.5px var(--color-panel), 0 0 0 4px var(--color-acid); }
+.mk-bogey  { border: 1.5px solid #b3543f; color: #e08a6f; }
+.mk-double { border: 1.5px solid var(--color-live); color: var(--color-live);
+             outline: 1.5px solid var(--color-live); outline-offset: 2.5px; }
+
+/* the modal that holds a full card */
+.overlay {
+  position: fixed; inset: 0; z-index: 60;
+  background: rgba(2, 4, 5, 0.78);
+  backdrop-filter: blur(3px);
+  display: grid; place-items: center;
+  padding: 1rem;
+}
+
 /* -------------------------------------------------------------- motion -- */
 
 @keyframes rise {

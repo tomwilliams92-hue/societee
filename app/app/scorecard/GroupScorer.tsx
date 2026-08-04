@@ -116,7 +116,7 @@ export function GroupScorer({ token }: { token: string }) {
               <div className="flex items-baseline justify-between gap-2">
                 <span className="name truncate text-[1.05rem]">{player.name}</span>
                 <span className="label shrink-0">
-                  off {formatPlayingHandicap(ph)}
+                  HCP {formatPlayingHandicap(ph)}
                   {shots > 0 && <span className="text-[var(--color-acid)]"> · {"•".repeat(Math.min(shots, 3))}</span>}
                   {shots < 0 && <span className="text-[var(--color-live)]"> · gives 1</span>}
                 </span>

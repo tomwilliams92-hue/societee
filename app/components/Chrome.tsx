@@ -4,18 +4,28 @@ import { Crest, Wordmark } from "./Crest";
 export function Header({ back }: { back?: { href: string; label: string } }) {
   return (
     <header className="sticky top-0 z-30 border-b border-[var(--color-line)] bg-[rgba(6,8,10,0.88)] backdrop-blur-md">
-      <div className="mx-auto flex h-14 max-w-5xl items-center gap-3 px-4">
-        <Link href="/" className="flex items-center gap-2.5">
-          <Crest size={24} />
-          <Wordmark />
-        </Link>
-        {back && (
+      <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 px-4">
+        {back ? (
+          // Sub-page: an unmissable back button, not a breadcrumb you have to
+          // discover. The wordmark moves to the right and stays a link home.
           <>
-            <span className="text-[var(--color-line)]">/</span>
-            <Link href={back.href} className="label hover:text-[var(--color-text)]">
-              {back.label}
+            <Link
+              href={back.href}
+              className="flex min-h-[2.4rem] items-center gap-1.5 rounded-[2px] border border-[var(--color-line)] px-3 hover:border-[var(--color-acid)]"
+            >
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round"><path d="M15 18 9 12l6-6" /></svg>
+              <span className="label !text-[0.66rem]" style={{ color: "inherit" }}>{back.label}</span>
+            </Link>
+            <Link href="/" className="flex items-center gap-2">
+              <Crest size={22} />
+              <Wordmark className="!text-[1rem]" />
             </Link>
           </>
+        ) : (
+          <Link href="/" className="flex items-center gap-2.5">
+            <Crest size={24} />
+            <Wordmark />
+          </Link>
         )}
       </div>
     </header>

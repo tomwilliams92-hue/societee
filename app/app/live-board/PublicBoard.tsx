@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { Crest } from "@/components/Crest";
+import { ScorecardModal } from "@/components/Scorecard";
 import { useDB, select } from "@/lib/store";
 import { formatPlayingHandicap, liveTotals, rank } from "@/lib/scoring";
 import { courseById, teeById } from "@/lib/courses";
@@ -17,6 +18,7 @@ export function PublicBoard({ token }: { token: string }) {
   const db = useDB();
   const ev = select.eventByToken(db, token);
   const [now, setNow] = useState("");
+  const [cardFor, setCardFor] = useState<string | null>(null);
 
   useEffect(() => {
     const tick = () =>
@@ -100,8 +102,12 @@ export function PublicBoard({ token }: { token: string }) {
           {rows.map((r, i) => (
             <div
               key={r.en.id}
+              onClick={() => setCardFor(r.player.id)}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === "Enter") setCardFor(r.player.id); }}
               className={
-                "board-row rise" +
+                "board-row rise cursor-pointer" +
                 (r.position === 1 && r.thru > 0 ? " lead" : "") +
                 (r.thru === 0 ? " out" : "")
               }
@@ -112,8 +118,8 @@ export function PublicBoard({ token }: { token: string }) {
                 <span className="nm block truncate">{r.player.name}</span>
                 <span className="label mt-0.5 block">
                   {r.thru === 0
-                    ? `still out · off ${formatPlayingHandicap(r.en.playingHandicap)}`
-                    : `${byHole ? `thru ${r.thru}` : `${r.gross} gross`} · off ${formatPlayingHandicap(r.en.playingHandicap)}`}
+                    ? `still out · HCP ${formatPlayingHandicap(r.en.playingHandicap)}`
+                    : `${byHole ? `thru ${r.thru}` : `${r.gross} gross`} · HCP ${formatPlayingHandicap(r.en.playingHandicap)}`}
                 </span>
               </span>
               <span className="pts">{r.thru === 0 ? "–" : r.points}</span>
@@ -142,6 +148,10 @@ export function PublicBoard({ token }: { token: string }) {
               );
             })}
           </div>
+        )}
+
+        {cardFor && (
+          <ScorecardModal eventId={ev.id} playerId={cardFor} onClose={() => setCardFor(null)} />
         )}
 
         <footer className="mt-8 text-center">

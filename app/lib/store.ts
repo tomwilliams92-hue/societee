@@ -41,6 +41,13 @@ export type DB = {
    * there for every society that plays the course after them.
    */
   cards: Record<string, HoleInfo[]>;
+  /**
+   * Whoever holds THIS device. Lets a golfer keep their own handicap index in
+   * one place; saving it flows into any player row with the same name. On the
+   * shared database this becomes the claim flow (players.claimed_by) — each
+   * mate sets theirs on their own phone and the organiser never types it.
+   */
+  me: { name: string; handicapIndex: number | null; homeClub?: string } | null;
 };
 
 /** Older saved state won't have the newer collections. Don't crash on it. */
@@ -50,6 +57,7 @@ function migrate(db: Partial<DB>): DB {
     events: db.events ?? [], groups: db.groups ?? [], entries: db.entries ?? [],
     rounds: db.rounds ?? [], holeScores: db.holeScores ?? [], sideComps: db.sideComps ?? [],
     cards: db.cards ?? {},
+    me: db.me ?? null,
   };
 }
 
@@ -98,7 +106,7 @@ const SWINDLE = [
 function seed(): DB {
   const db: DB = {
     societies: [], players: [], seasons: [], events: [], groups: [],
-    entries: [], rounds: [], holeScores: [], sideComps: [], cards: {},
+    entries: [], rounds: [], holeScores: [], sideComps: [], cards: {}, me: null,
   };
 
   /* ---------- Society 1: a season-long Order of Merit across the summer ---- */
@@ -484,6 +492,28 @@ export const actions = {
 
     update((db) => { db.cards[teeId] = holes; });
     return null;
+  },
+
+  /**
+   * Save this device's own profile, and pull the index into every player row
+   * with the same name (case-insensitive). Returns how many rows it updated.
+   * Existing cards keep the playing handicap they were played off.
+   */
+  setMe(me: { name: string; handicapIndex: number | null; homeClub?: string }): number {
+    let touched = 0;
+    update((db) => {
+      db.me = me;
+      if (me.name.trim()) {
+        const key = me.name.trim().toLowerCase();
+        for (const p of db.players) {
+          if (p.name.trim().toLowerCase() === key && p.handicapIndex !== me.handicapIndex) {
+            p.handicapIndex = me.handicapIndex;
+            touched++;
+          }
+        }
+      }
+    });
+    return touched;
   },
 
   setGroupStartHole(eventId: string, groupNo: number, startHole: number) {

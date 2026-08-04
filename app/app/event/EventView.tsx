@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Header, Footer, SectionTitle } from "@/components/Chrome";
 import { Leaderboard, type BoardRow } from "@/components/Leaderboard";
+import { ScorecardModal } from "@/components/Scorecard";
 import { useDB, select, actions } from "@/lib/store";
 import { courseHandicap, formatHandicap, formatPlayingHandicap, rank } from "@/lib/scoring";
 import { courseById, teeById } from "@/lib/courses";
@@ -16,6 +17,7 @@ export function EventView({ eventId }: { eventId: string }) {
   const ev = select.event(db, eventId);
   const [origin, setOrigin] = useState("");
   const [showHcp, setShowHcp] = useState<string | null>(null);
+  const [cardFor, setCardFor] = useState<string | null>(null);
 
   useEffect(() => setOrigin(window.location.origin), []);
 
@@ -57,8 +59,8 @@ export function EventView({ eventId }: { eventId: string }) {
     value: r.points,
     note:
       r.points == null
-        ? `still out · off ${formatPlayingHandicap(r.en.playingHandicap)}`
-        : `${r.gross} gross · off ${formatPlayingHandicap(r.en.playingHandicap)}`,
+        ? `still out · HCP ${formatPlayingHandicap(r.en.playingHandicap)}`
+        : `${r.gross} gross · HCP ${formatPlayingHandicap(r.en.playingHandicap)}`,
   }));
 
   const cardsIn = rounds.length;
@@ -105,14 +107,20 @@ export function EventView({ eventId }: { eventId: string }) {
                   <div key={en.id} className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="min-w-0 flex-1">
-                      <span className="block truncate text-[0.95rem] font-medium">{player.name}</span>
+                      <button
+                        className="block max-w-full truncate text-left text-[0.95rem] font-medium underline-offset-4 hover:underline"
+                        onClick={() => setCardFor(player.id)}
+                        title={`See ${player.shortName ?? player.name}'s card hole by hole`}
+                      >
+                        {player.name}
+                      </button>
                       <button
                         className="label text-left"
                         onClick={() => setShowHcp(open ? null : en.id)}
                         aria-expanded={open}
                         title="How this playing handicap was worked out"
                       >
-                        off {formatPlayingHandicap(en.playingHandicap)}{" "}
+                        HCP {formatPlayingHandicap(en.playingHandicap)}{" "}
                         <span style={{ color: "var(--color-acid)" }}>ⓘ</span> · group {en.groupNo} ·
                         from {en.startHole}
                       </button>
@@ -351,6 +359,10 @@ export function EventView({ eventId }: { eventId: string }) {
           />
         </section>
       </main>
+
+      {cardFor && (
+        <ScorecardModal eventId={ev.id} playerId={cardFor} onClose={() => setCardFor(null)} />
+      )}
 
       <Footer />
     </>

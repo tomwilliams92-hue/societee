@@ -55,6 +55,12 @@ export function BottomNav() {
       on: false,
     });
   }
+  items.push({
+    href: "/profile",
+    label: "Profile",
+    icon: <PersonIcon />,
+    on: path.startsWith("/profile"),
+  });
 
   return (
     <>
@@ -98,6 +104,9 @@ function TrophyIcon() {
 }
 function FlagIcon() {
   return <svg {...I}><path d="M5 21V4" /><path d="M5 4c4-2 7 2 14 0v9c-7 2-10-2-14 0" /></svg>;
+}
+function PersonIcon() {
+  return <svg {...I}><circle cx="12" cy="8" r="4" /><path d="M4 21c0-4 3.6-6.5 8-6.5s8 2.5 8 6.5" /></svg>;
 }
 function BoardIcon() {
   return <svg {...I}><rect x="3" y="4" width="18" height="16" rx="1" /><path d="M7 9h6" /><path d="M7 13h8" /><path d="M7 17h4" /></svg>;

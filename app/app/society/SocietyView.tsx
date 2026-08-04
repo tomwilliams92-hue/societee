@@ -58,7 +58,7 @@ export function SocietyView({ slug }: { slug: string }) {
         note:
           r.played === 0
             ? "no cards in"
-            : `${r.counted} of ${r.played} card${r.played === 1 ? "" : "s"} counting · off ${formatHandicap(r.player.handicapIndex)}`,
+            : `${r.counted} of ${r.played} card${r.played === 1 ? "" : "s"} counting · HCP ${formatHandicap(r.player.handicapIndex)}`,
       }))
     : [];
 
