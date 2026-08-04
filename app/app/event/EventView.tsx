@@ -39,7 +39,7 @@ export function EventView({ eventId }: { eventId: string }) {
   const entries = select.entries(db, ev.id);
   const rounds = select.roundsForEvent(db, ev.id);
   const sideComps = select.sideComps(db, ev.id);
-  const shareUrl = `${origin}/live/${ev.shareToken}`;
+  const shareUrl = `${origin}/live-board?b=${ev.shareToken}`;
 
   const rows: BoardRow[] = rank(
     entries.map((en) => {
@@ -69,7 +69,7 @@ export function EventView({ eventId }: { eventId: string }) {
 
   return (
     <>
-      <Header back={{ href: `/s/${society.slug}`, label: society.name }} />
+      <Header back={{ href: `/society?s=${society.slug}`, label: society.name }} />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-16">
         <section className="py-9">
@@ -187,7 +187,7 @@ export function EventView({ eventId }: { eventId: string }) {
                 <div className="grid gap-2 sm:grid-cols-2">
                   {groups.map((g) => {
                     const inGroup = select.groupPlayers(db, ev.id, g.groupNo);
-                    const url = `${origin}/score/${g.scorerToken}`;
+                    const url = `${origin}/scorecard?g=${g.scorerToken}`;
                     return (
                       <div key={g.id} className="card feed p-3">
                         <div className="flex items-baseline justify-between gap-2">
@@ -198,7 +198,7 @@ export function EventView({ eventId }: { eventId: string }) {
                           {inGroup.map((x) => x.player.shortName ?? x.player.name).join(" · ") || "Nobody yet"}
                         </p>
                         <div className="mt-2.5 flex gap-2">
-                          <Link href={`/score/${g.scorerToken}`} className="btn btn-ghost flex-1 !min-h-[2.5rem] !text-[0.75rem]">
+                          <Link href={`/scorecard?g=${g.scorerToken}`} className="btn btn-ghost flex-1 !min-h-[2.5rem] !text-[0.75rem]">
                             Open
                           </Link>
                           <button
@@ -267,7 +267,7 @@ export function EventView({ eventId }: { eventId: string }) {
                 no download, no sign-up.
               </p>
               <div className="mt-4 flex gap-2">
-                <Link href={`/live/${ev.shareToken}`} className="btn btn-primary flex-1">
+                <Link href={`/live-board?b=${ev.shareToken}`} className="btn btn-primary flex-1">
                   Open board
                 </Link>
                 <button
@@ -306,7 +306,7 @@ export function EventView({ eventId }: { eventId: string }) {
                 onClick={() => {
                   if (confirm(`Delete “${ev.name}” and every card in it? This can't be undone.`)) {
                     actions.deleteEvent(ev.id);
-                    router.push(`/s/${society.slug}`);
+                    router.push(`/society?s=${society.slug}`);
                   }
                 }}
               >

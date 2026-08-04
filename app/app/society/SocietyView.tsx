@@ -235,7 +235,7 @@ export function SocietyView({ slug }: { slug: string }) {
             return (
               <Link
                 key={ev.id}
-                href={`/e/${ev.id}`}
+                href={`/event?e=${ev.id}`}
                 className="card flex flex-wrap items-center gap-x-6 gap-y-2 p-4 transition-transform hover:-translate-y-0.5"
               >
                 <div className="min-w-0 flex-1">

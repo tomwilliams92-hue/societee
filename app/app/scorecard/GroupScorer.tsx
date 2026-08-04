@@ -52,7 +52,7 @@ export function GroupScorer({ token }: { token: string }) {
     <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col px-4 pb-6">
       {/* ---------------------------------------------------------- head -- */}
       <header className="flex items-center justify-between gap-3 py-4">
-        <Link href={`/live/${ev.shareToken}`} className="flex items-center gap-2">
+        <Link href={`/live-board?b=${ev.shareToken}`} className="flex items-center gap-2">
           <Crest size={22} />
           <span className="label">Group {group.groupNo}</span>
         </Link>
@@ -152,7 +152,7 @@ export function GroupScorer({ token }: { token: string }) {
 
       {/* --------------------------------------------------------- next -- */}
       <div className="mt-4 flex gap-2">
-        <Link href={`/live/${ev.shareToken}`} className="btn btn-ghost flex-1">
+        <Link href={`/live-board?b=${ev.shareToken}`} className="btn btn-ghost flex-1">
           Leaderboard
         </Link>
         <button className={`btn flex-1 ${done ? "btn-primary" : "btn-ghost"}`} onClick={() => go(current + 1)}>

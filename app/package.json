@@ -7,9 +7,14 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "phone": "next build && next start -H 0.0.0.0 -p 3000"
+    "phone": "next build && next start -H 0.0.0.0 -p 3000",
+    "build:native": "cp next.config.ts next.config.web.bak && cp next.config.native.ts next.config.ts && next build; cp next.config.web.bak next.config.ts && rm -f next.config.web.bak",
+    "ios": "npm run build:native && npx cap sync ios"
   },
   "dependencies": {
+    "@capacitor/cli": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/ios": "^8.5.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.112.0",
     "next": "16.2.12",

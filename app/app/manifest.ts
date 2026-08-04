@@ -1,5 +1,9 @@
 import type { MetadataRoute } from "next";
 
+// The manifest never changes at runtime. Saying so lets the whole app be
+// exported as static files, which is what a native iOS shell has to bundle.
+export const dynamic = "force-static";
+
 /**
  * Makes "Add to Home Screen" produce something that looks and behaves like an
  * app: own icon, no Safari chrome, dark theme, portrait.

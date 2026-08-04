@@ -103,7 +103,7 @@ export default function Home() {
             return (
               <Link
                 key={s.id}
-                href={`/s/${s.slug}`}
+                href={`/society?s=${s.slug}`}
                 className="card feed block p-5 transition-transform hover:-translate-y-0.5 rise"
                 style={{ animationDelay: `${i * 70}ms` }}
               >
