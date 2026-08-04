@@ -30,14 +30,26 @@ already have an account, so this is two clicks and no new password).
 
 | Field | What to put |
 |---|---|
-| Name | `societee` |
-| Database password | Click **Generate a password**, then **copy it somewhere safe** |
-| Region | **West EU (London)** |
-| Plan | Free |
+| Organization | leave as is |
+| GitHub (optional) | **skip** — it expects migration files in a particular layout, and ours is a single `schema.sql` |
+| Project name | `societee` |
+| Database password | **Generate a password**, then save it somewhere |
+| Region | open the dropdown and pick **West EU (London)** — "Europe" alone isn't specific enough |
 
 **Region matters.** London is the only UK one. It keeps your players' names and
 scores under UK jurisdiction, which is the simplest position to be in for UK
-GDPR. Everything else on that screen can stay as it is.
+GDPR.
+
+### ⚠️ The Security section — one real trap
+
+| Option | Set it to | Why |
+|---|---|---|
+| **Enable Data API** | ✅ **ticked** | The app talks to the database through this. Untick it and nothing works. |
+| **Automatically expose new tables** | ✅ **ticked** — *even though Supabase recommends disabling it* | Their advice is for people who don't set up row-level security. `schema.sql` enables RLS on **every** table and defines explicit policies, so exposure grants nothing by itself — RLS is the real gate. Untick this and the tables get no API access at all, and the app fails with permission errors. |
+| **Enable automatic RLS** | ⬜ unticked | A safety net that auto-enables RLS on future tables. Harmless, but ours already do it themselves. |
+
+So on that screen you only change three things: the project name, the generated
+password, and the region.
 
 It then takes a minute or two to build. Wait for it to go green.
 
