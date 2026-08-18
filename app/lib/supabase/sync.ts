@@ -19,7 +19,7 @@ import { supabase } from "./client";
 import { IS_REMOTE } from "./config";
 import { loadAll, map, uid } from "./remote";
 import {
-  onCommit, hydrateRemote, readLocalDemoDB, update, type DB,
+  onCommit, hydrateRemote, readDB, readLocalDemoDB, update, type DB,
 } from "../store";
 import { COURSES, UK_DIRECTORY, courseById, teeById } from "../courses";
 import type { Tee } from "../types";
@@ -96,6 +96,32 @@ function baselineOf(db: DB): Baseline {
 
 /** What the server is known to hold. Diffs are computed against this. */
 let pushed: Baseline | null = null;
+
+/*
+ * The baseline's KEYS survive restarts. Without this, a row that never reached
+ * the server (push failed, app closed mid-flush) was indistinguishable at the
+ * next launch from a row deleted on another device — and the launch pull wiped
+ * it. That was "why is it not saving my societies": create → push fails
+ * (e.g. slug collision) → relaunch → gone. With the keys persisted, pull keeps
+ * anything local the server was never known to hold, and re-pushes it.
+ */
+const PUSHED_KEY = "societee.pushed-keys.v1";
+
+function savePushedKeys(b: Baseline) {
+  try {
+    window.localStorage.setItem(
+      PUSHED_KEY,
+      JSON.stringify(Object.fromEntries(TABLES.map((t) => [t, [...b[t].keys()]])))
+    );
+  } catch { /* private mode — merge just errs on the keep side */ }
+}
+
+function loadPushedKeys(): Partial<Record<Synced, string[]>> | null {
+  try {
+    const raw = window.localStorage.getItem(PUSHED_KEY);
+    return raw ? (JSON.parse(raw) as Partial<Record<Synced, string[]>>) : null;
+  } catch { return null; }
+}
 let dirty: DB | null = null;
 let pushTimer: ReturnType<typeof setTimeout> | null = null;
 let pushing = false;
@@ -148,7 +174,10 @@ function onSignedOut() {
   unsubCommit?.(); unsubCommit = null;
   unsubRealtime?.(); unsubRealtime = null;
   pushed = null; dirty = null;
-  try { window.localStorage.removeItem("societee.remote.v1"); } catch { /* fine */ }
+  try {
+    window.localStorage.removeItem("societee.remote.v1");
+    window.localStorage.removeItem(PUSHED_KEY);
+  } catch { /* fine */ }
   hydrateRemote({
     societies: [], players: [], seasons: [], events: [], groups: [],
     entries: [], rounds: [], holeScores: [], sideComps: [],
@@ -159,12 +188,49 @@ function onSignedOut() {
 async function pull() {
   const sb = supabase()!;
   const remote = await loadAll(sb);
-  hydrateRemote({
-    societies: remote.societies, players: remote.players, seasons: remote.seasons,
-    events: remote.events, groups: remote.groups, entries: remote.entries,
-    rounds: remote.rounds, holeScores: remote.holeScores, sideComps: remote.sideComps,
+  const local = readDB();
+  const known = loadPushedKeys();
+
+  // Merge, don't replace: a local row the server doesn't have is either
+  // deleted-elsewhere (its key is in the persisted baseline — drop it) or
+  // never-pushed (keep it, and flush it right after this pull).
+  const merged: Partial<DB> = {};
+  const onServer = {} as Record<Synced, Set<string>>;
+  let kept = 0;
+  for (const t of TABLES) {
+    const remoteRows = remote[t] as unknown as Record<string, unknown>[];
+    onServer[t] = new Set(remoteRows.map((r) => rowKey(t, r)));
+    const wasPushed = known ? new Set(known[t] ?? []) : null;
+    const keep = (local[t] as unknown as Record<string, unknown>[]).filter((r) => {
+      const k = rowKey(t, r);
+      return !onServer[t].has(k) && !(wasPushed?.has(k) ?? false);
+    });
+    kept += keep.length;
+    (merged as Record<string, unknown>)[t] = [...remoteRows, ...keep];
+  }
+
+  // Badge and crest only live on this device (no server column yet) — carry
+  // them across the pull instead of resetting every society to the default.
+  merged.societies = merged.societies!.map((r) => {
+    const loc = local.societies.find((l) => l.id === r.id);
+    return loc && (loc.badge || loc.crestData)
+      ? { ...r, badge: r.badge ?? loc.badge, crestData: r.crestData ?? loc.crestData }
+      : r;
   });
-  pushed = baselineOf(remote);
+
+  hydrateRemote(merged);
+
+  // The diff baseline is what the SERVER holds — hashed from the merged rows
+  // (so device-only fields like the badge don't read as endless phantom diffs),
+  // restricted to keys the server actually returned.
+  const serverSide = {} as DB;
+  for (const t of TABLES) {
+    (serverSide as unknown as Record<string, unknown>)[t] =
+      (merged[t] as unknown as Record<string, unknown>[]).filter((r) => onServer[t].has(rowKey(t, r)));
+  }
+  pushed = baselineOf(serverSide);
+  savePushedKeys(pushed);
+  if (kept > 0) scheduleFlush(readDB());
 }
 
 function subscribeRealtime() {
@@ -283,7 +349,19 @@ async function flush(force = false) {
       if (!rows.length) continue;
       const conflict = t === "holeScores" ? "round_id,hole" : "id";
       const { error } = await sb.from(SQL_NAME[t]).upsert(rows, { onConflict: conflict });
-      if (error) throw new Error(`${SQL_NAME[t]}: ${error.message}`);
+      if (error) {
+        // The slug column is globally unique server-side, so "Test" can crash
+        // into a leftover row from an earlier device or account. Slugs are
+        // cosmetic (links navigate by id) — rename locally and the automatic
+        // retry lands the row instead of failing forever and losing it.
+        if (t === "societies" && /duplicate key|unique constraint|23505/i.test(error.message)) {
+          const ids = new Set(rows.map((r) => String(r.id)));
+          update((d) => {
+            for (const s of d.societies) if (ids.has(s.id)) s.slug = `${s.slug}-${uid().slice(0, 4)}`;
+          });
+        }
+        throw new Error(`${SQL_NAME[t]}: ${error.message}`);
+      }
     }
 
     // deletes, children first
@@ -303,6 +381,7 @@ async function flush(force = false) {
     }
 
     pushed = next;
+    savePushedKeys(pushed);
     if (dirty === db) dirty = null;
     setStatus("live");
     // anything that raced in while we pushed goes on the next tick

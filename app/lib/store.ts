@@ -272,6 +272,11 @@ export function hydrateRemote(remote: Partial<DB>) {
   try { commit(migrate({ ...cur, ...remote })); } finally { silentCommit = false; }
 }
 
+/** The current snapshot, for the sync engine's pull-merge. */
+export function readDB(): DB {
+  return read();
+}
+
 /** The old on-device demo/local data, for one-time migration to the account. */
 export function readLocalDemoDB(): DB | null {
   try {
