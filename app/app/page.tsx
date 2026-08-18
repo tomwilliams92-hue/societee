@@ -227,7 +227,7 @@ export default function Home() {
             return (
               <Link
                 key={s.id}
-                href={`/society?s=${s.slug}`}
+                href={`/society?s=${s.id}`}
                 className="card flex min-w-0 items-center gap-3.5 p-3.5 transition-transform hover:-translate-y-0.5 rise"
                 style={{ animationDelay: `${i * 60}ms` }}
               >

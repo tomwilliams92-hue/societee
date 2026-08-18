@@ -675,7 +675,11 @@ export const actions = {
 /* --------------------------------------------------------------- selectors -- */
 
 export const select = {
-  society: (db: DB, slug: string) => db.societies.find((s) => s.slug === slug),
+  // Accepts the slug or the id. Internal links navigate by id — ids are
+  // unique by construction, so two societies can never route to one page
+  // even if their slugs somehow collide (the "Test opens To and J" bug).
+  society: (db: DB, key: string) =>
+    db.societies.find((s) => s.id === key) ?? db.societies.find((s) => s.slug === key),
   players: (db: DB, societyId: string) => db.players.filter((p) => p.societyId === societyId && p.active),
   events: (db: DB, societyId: string) =>
     db.events.filter((e) => e.societyId === societyId).sort((a, b) => b.playsOn.localeCompare(a.playsOn)),

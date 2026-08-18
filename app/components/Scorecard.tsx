@@ -123,6 +123,20 @@ export function ScorecardModal({
           </button>
         </div>
 
+        {/* The key, at the top where it's read before the card. Each item is an
+            inline-flex with a real gap — the eagle/double rings paint outside
+            their glyph box, so plain spaces let them collide with the words. */}
+        {card && holes.length > 0 && (
+          <div className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-2">
+            <span className="label inline-flex items-center gap-1.5 !text-[0.55rem]"><span className="mono text-[var(--color-text)]">4·13</span> par 4, stroke index 13</span>
+            <span className="label inline-flex items-center gap-1.5 !text-[0.55rem]" style={{ color: "var(--color-acid)" }}>● shot received</span>
+            <span className="label inline-flex items-center gap-2 !text-[0.55rem]"><span className="mk mk-birdie !m-0 !inline-grid !h-4 !w-4 !text-[0.5rem]"> </span> birdie</span>
+            <span className="label inline-flex items-center gap-2 !text-[0.55rem]"><span className="mk mk-eagle !m-0 !inline-grid !h-4 !w-4 !text-[0.5rem]"> </span> eagle</span>
+            <span className="label inline-flex items-center gap-2 !text-[0.55rem]"><span className="mk mk-bogey !m-0 !inline-grid !h-4 !w-4 !text-[0.5rem]"> </span> bogey</span>
+            <span className="label inline-flex items-center gap-2 !text-[0.55rem]"><span className="mk mk-double !m-0 !inline-grid !h-4 !w-4 !text-[0.5rem]"> </span> double+</span>
+          </div>
+        )}
+
         {!card ? (
           <p className="py-6 text-center text-[0.85rem] text-[var(--color-dim)]">
             No scorecard on file for this course yet.
@@ -156,14 +170,6 @@ export function ScorecardModal({
                 {sum([...front, ...back], "s")} gross · {sum([...front, ...back], "net")} net ·{" "}
                 <span style={{ color: "var(--color-acid)" }}>{sum([...front, ...back], "pts")} pts</span>
               </span>
-            </div>
-            <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
-              <span className="label !text-[0.55rem]"><span className="mono text-[var(--color-text)]">4·13</span> = par 4, SI 13</span>
-              <span className="label !text-[0.55rem]"><span className="mk mk-birdie !inline-grid !h-4 !w-4 !text-[0.5rem]"> </span> birdie</span>
-              <span className="label !text-[0.55rem]"><span className="mk mk-eagle !inline-grid !h-4 !w-4 !text-[0.5rem]"> </span> eagle</span>
-              <span className="label !text-[0.55rem]"><span className="mk mk-bogey !inline-grid !h-4 !w-4 !text-[0.5rem]"> </span> bogey</span>
-              <span className="label !text-[0.55rem]"><span className="mk mk-double !inline-grid !h-4 !w-4 !text-[0.5rem]"> </span> double+</span>
-              <span className="label !text-[0.55rem]" style={{ color: "var(--color-acid)" }}>● shot received</span>
             </div>
           </>
         )}

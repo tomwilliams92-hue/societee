@@ -17,7 +17,13 @@ const config: CapacitorConfig = {
   appName: "Societee",
   webDir: "out",
   ios: {
-    contentInset: "always",
+    // "never", not "always": contentInsetAdjustment acts on the webview's
+    // scroll view, and this app's body never scrolls (the shell scrolls inside
+    // .app-scroll) — so "always" silently did nothing and content sat under
+    // the status bar. Instead the webview runs edge-to-edge and the CSS does
+    // the work: viewport-fit=cover + env(safe-area-inset-top) padding + the
+    // fixed .statusbar-scrim behind the clock. Same mechanism as the PWA.
+    contentInset: "never",
     backgroundColor: "#06080a",
     // Scoring happens outdoors in daylight; never flip to a light UI.
     preferredContentMode: "mobile",

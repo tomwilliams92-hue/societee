@@ -39,7 +39,7 @@ export default function GroupsPage() {
             const lastDone = events.find((e) => e.status === "complete");
             const season = select.currentSeason(db, s.id);
             return (
-              <Link key={s.id} href={`/society?s=${s.slug}`}
+              <Link key={s.id} href={`/society?s=${s.id}`}
                     className="card min-w-0 p-3.5 transition-transform hover:-translate-y-0.5">
                 <span className="flex items-center gap-3.5">
                   <SocietyBadge society={s} size={54} rounded={12} />

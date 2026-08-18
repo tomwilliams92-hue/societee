@@ -85,7 +85,7 @@ export function EventView({ eventId }: { eventId: string }) {
 
   return (
     <>
-      <Header back={{ href: `/society?s=${society.slug}`, label: society.name }} />
+      <Header back={{ href: `/society?s=${society.id}`, label: society.name }} />
 
       <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-16">
         <section className="py-6">
@@ -476,7 +476,7 @@ export function EventView({ eventId }: { eventId: string }) {
           ]}
           onConfirm={() => {
             actions.deleteEvent(ev.id);
-            router.push(`/society?s=${society.slug}`);
+            router.push(`/society?s=${society.id}`);
           }}
           onClose={() => setConfirmDelete(false)}
         />

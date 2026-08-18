@@ -197,7 +197,7 @@ function NewGame() {
         crestData: crestData ?? undefined,
       });
       for (const r of parseRoster()) if (r.name) actions.addPlayer(soc.id, r.name, r.hcp);
-      router.push(`/society?s=${soc.slug}`);
+      router.push(`/society?s=${soc.id}`);
       return;
     }
     if (!society) return;
@@ -209,7 +209,7 @@ function NewGame() {
         bestN: bestN === "" ? null : Number(bestN),
         prize: prize.trim() || undefined,
       });
-      router.push(`/society?s=${society.slug}`);
+      router.push(`/society?s=${society.id}`);
       return;
     }
     // event — one createEvent per round; several rounds share a series board
@@ -813,7 +813,7 @@ function NewGame() {
             <div className="grid grid-cols-4 gap-2">
               {BADGES.map((b) => (
                 <button key={b} type="button" aria-label={b}
-                  className="rounded-[16px] p-0.5"
+                  className="grid place-items-center rounded-[16px] p-0.5"
                   style={{ outline: !crestData && badge === b ? "2.5px solid var(--color-acid)" : "1px solid var(--color-line)" }}
                   onClick={() => { setBadge(b); setCrestData(null); }}>
                   <Badge id={b} size={70} />
@@ -938,10 +938,10 @@ function NewGame() {
 
 /* ------------------------------------------------------------ chrome bits -- */
 
-function Shell({ society, children }: { society?: { slug: string; name: string }; children: React.ReactNode }) {
+function Shell({ society, children }: { society?: { id: string; slug: string; name: string }; children: React.ReactNode }) {
   return (
     <>
-      <Header back={society ? { href: `/society?s=${society.slug}`, label: society.name } : { href: "/", label: "Home" }} />
+      <Header back={society ? { href: `/society?s=${society.id}`, label: society.name } : { href: "/", label: "Home" }} />
       <main className="mx-auto w-full max-w-lg flex-1 px-4 pb-16">{children}</main>
     </>
   );
