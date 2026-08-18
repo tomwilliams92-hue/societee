@@ -14,7 +14,8 @@
  * enters a gross total instead — which needs no card and is always correct.
  * ------------------------------------------------------------------------- */
 
-import type { Course, HoleInfo, Tee } from "./types";
+import type { Course, HoleInfo, Tee, Union } from "./types";
+import UK_RAW from "./uk-courses.json";
 
 /** Build a card from [par, strokeIndex] pairs, validating as we go. */
 export function makeCard(pairs: [number, number][], expectedPar: number): HoleInfo[] {
@@ -114,11 +115,75 @@ export const COURSES: Course[] = [
   },
 ];
 
-export const courseById = (id?: string) => COURSES.find((c) => c.id === id);
+/* ---------------------------------------------------------------------------
+ * THE UK DIRECTORY — every golf course in the UK, from OpenStreetMap (ODbL),
+ * fetched 5 Aug 2026: 2,909 courses across England, Scotland, Wales and
+ * Northern Ireland (NI golf is governed by Golf Ireland, hence union "Ireland").
+ *
+ * The directory has NAMES AND LOCATIONS ONLY — deliberately. There is no free
+ * licensed source of tee ratings, and a guessed CR/slope produces confidently
+ * wrong handicaps (the wrong-card complaint in Squabbit's reviews). So picking
+ * a directory course asks the organiser for the three numbers printed on every
+ * scorecard — par, CR, slope — once per tee, saved for good via actions.addTee.
+ * ------------------------------------------------------------------------- */
+
+export type DirectoryCourse = {
+  id: string;
+  name: string;
+  country: Union;
+  lat: number;
+  lon: number;
+  /** from OSM's golf:holes where tagged; null = unknown */
+  holes: number | null;
+};
+
+/** "Conwy (Caernarvonshire) Golf Club" and "Conwy Golf Club" are one course. */
+const normName = (s: string) =>
+  s.toLowerCase().replace(/\(.*?\)/g, "").replace(/golf (club|course|links)/g, "")
+   .replace(/[^a-z0-9]+/g, " ").trim();
+
+const VERIFIED_KEYS = new Set(COURSES.flatMap((c) => [normName(c.name), normName(c.clubName ?? "")]));
+
+export const UK_DIRECTORY: DirectoryCourse[] = (
+  UK_RAW as [string, string, string, number, number, number | null][]
+)
+  .map(([id, name, country, lat, lon, holes]) => ({ id, name, country: country as Union, lat, lon, holes }))
+  .filter((c) => !VERIFIED_KEYS.has(normName(c.name))); // verified entries win
+
+/**
+ * Tees organisers have entered for directory courses. Lives in the store
+ * (db.customTees) and is mirrored here on every read/commit so the pure
+ * lookups below keep working everywhere without threading the DB through.
+ */
+let CUSTOM: Record<string, Tee> = {};
+export function registerCustomTees(tees: Record<string, Tee>) { CUSTOM = tees; }
+export const customTeesFor = (courseId: string): Tee[] =>
+  Object.values(CUSTOM).filter((t) => t.courseId === courseId);
+
+const directoryCourse = (id?: string): Course | undefined => {
+  const d = UK_DIRECTORY.find((c) => c.id === id);
+  return d && { id: d.id, name: d.name, clubName: d.name, country: d.country, tees: customTeesFor(d.id) };
+};
+
+export const courseById = (id?: string): Course | undefined =>
+  COURSES.find((c) => c.id === id) ?? directoryCourse(id);
 export const teeById = (id?: string): Tee | undefined =>
-  COURSES.flatMap((c) => c.tees).find((t) => t.id === id);
+  COURSES.flatMap((c) => c.tees).find((t) => t.id === id) ?? (id ? CUSTOM[id] : undefined);
 export const courseOfTee = (teeId?: string) =>
-  COURSES.find((c) => c.tees.some((t) => t.id === teeId));
+  COURSES.find((c) => c.tees.some((t) => t.id === teeId)) ??
+  (teeId ? courseById(CUSTOM[teeId]?.courseId) : undefined);
+
+/** Search the whole country. Verified courses first, then the directory. */
+export function searchCourses(q: string, limit = 30): Course[] {
+  const needle = normName(q);
+  if (!needle) return COURSES.slice(0, limit);
+  const hit = (name: string) => normName(name).includes(needle);
+  const verified = COURSES.filter((c) => hit(c.name) || hit(c.clubName ?? ""));
+  const rest = UK_DIRECTORY.filter((c) => hit(c.name))
+    .slice(0, Math.max(0, limit - verified.length))
+    .map((c) => courseById(c.id)!);
+  return [...verified, ...rest].slice(0, limit);
+}
 
 /** Can this tee be scored hole by hole yet? */
 export const hasCard = (teeId?: string) => (teeById(teeId)?.card?.length ?? 0) === 18;

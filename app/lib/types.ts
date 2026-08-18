@@ -85,8 +85,8 @@ export type Player = {
   name: string;
   shortName?: string;
   /**
-   * WHS handicap index. PLUS GOLFERS ARE NEGATIVE — Tom plays off +1.6, stored
-   * as -1.6. Format with formatHandicap() for display; never store the string.
+   * WHS handicap index. PLUS GOLFERS ARE NEGATIVE — Tom plays off +1.3, stored
+   * as -1.3. Format with formatHandicap() for display; never store the string.
    */
   handicapIndex: number | null;
   active: boolean;
@@ -132,6 +132,8 @@ export type GolfEvent = {
   status: EventStatus;
   shareToken: string;
   notes?: string;
+  /** players may add themselves via the event's registration link */
+  selfRegister?: boolean;
 };
 
 export type EventEntry = {

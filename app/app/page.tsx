@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { useState } from "react";
-import { Header, Footer } from "@/components/Chrome";
+import { Header } from "@/components/Chrome";
+import { CourseScene } from "@/components/CourseScene";
 import { SocietyBadge } from "@/components/Badge";
 import { useRouter } from "next/navigation";
 import { useDB, useReady, select, resetDemo } from "@/lib/store";
 import { bestNTotal, rank } from "@/lib/scoring";
+import { IS_REMOTE } from "@/lib/supabase/config";
 
 /**
  * Home is a dashboard, not a landing page: what's live, then your societies,
@@ -39,9 +41,12 @@ export default function Home() {
     <>
       <Header />
 
-      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-10">
-        {/* ------------------------------------------------- greeting ------ */}
-        <section className="flex items-center justify-between gap-4 pb-6 pt-7">
+      {/* --------------- hero: greeting rising out of the course scene ----- */}
+      {/* shrink-0: overflow-hidden zeroes a flex child's min-size, and the
+          app-scroll column would crush the hero to nothing without it */}
+      <section className="relative shrink-0 overflow-hidden">
+        <CourseScene />
+        <div className="relative mx-auto flex w-full max-w-5xl items-end justify-between gap-4 px-4 pb-5 pt-24 sm:pt-36">
           <div>
             <p className="label">
               {ready
@@ -70,8 +75,10 @@ export default function Home() {
               </span>
             )}
           </Link>
-        </section>
+        </div>
+      </section>
 
+      <main className="mx-auto w-full max-w-5xl flex-1 px-4 pb-10">
         {/* ---------------------------------------- live now: the hero ----- */}
         {live && (() => {
           const entries = select.entries(db, live.id);
@@ -188,7 +195,10 @@ export default function Home() {
         )}
 
         {/* ------------------------------------------------- societies ----- */}
-        <h2 className="label mb-3 !text-[0.75rem]">Your societies</h2>
+        <h2 className="label !text-[0.75rem]">Your societies</h2>
+        <p className="label mb-3 mt-1 !normal-case !tracking-normal">
+          Leagues, trips, seasons, one-off days — everything you run lives inside a society.
+        </p>
 
 
         <div className="grid gap-3 sm:grid-cols-2">
@@ -218,7 +228,7 @@ export default function Home() {
               <Link
                 key={s.id}
                 href={`/society?s=${s.slug}`}
-                className="card flex items-center gap-3.5 p-3.5 transition-transform hover:-translate-y-0.5 rise"
+                className="card flex min-w-0 items-center gap-3.5 p-3.5 transition-transform hover:-translate-y-0.5 rise"
                 style={{ animationDelay: `${i * 60}ms` }}
               >
                 <SocietyBadge society={s} size={54} rounded={12} />
@@ -245,14 +255,15 @@ export default function Home() {
           </div>
         )}
 
-        <p className="mt-10 text-center">
-          <button className="label underline underline-offset-4" onClick={resetDemo}>
-            Reset demo data
-          </button>
-        </p>
+        {!IS_REMOTE && (
+          <p className="mt-10 text-center">
+            <button className="label underline underline-offset-4" onClick={resetDemo}>
+              Reset demo data
+            </button>
+          </p>
+        )}
       </main>
 
-      <Footer />
     </>
   );
 }

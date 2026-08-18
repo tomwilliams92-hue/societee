@@ -5,9 +5,11 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { Crest } from "@/components/Crest";
 import { ScorecardModal } from "@/components/Scorecard";
-import { useDB, select } from "@/lib/store";
+import { useDB, useReady, select } from "@/lib/store";
 import { formatPlayingHandicap, liveTotals, rank } from "@/lib/scoring";
 import { courseById, teeById } from "@/lib/courses";
+import { IS_REMOTE } from "@/lib/supabase/config";
+import { useGuestBoard } from "@/lib/supabase/guest";
 
 /**
  * The QR-code destination — the screen 24 golfers stare at for four hours.
@@ -17,7 +19,11 @@ import { courseById, teeById } from "@/lib/courses";
  */
 export function PublicBoard({ token }: { token: string }) {
   const db = useDB();
+  const ready = useReady();
   const ev = select.eventByToken(db, token);
+  // Someone else's QR code on this phone: fetch the board through the token
+  // RPC and hydrate it in — the rest of the component neither knows nor cares.
+  const guest = useGuestBoard(token, IS_REMOTE && ready && !ev);
   const router = useRouter();
   const [now, setNow] = useState("");
   const [canBack, setCanBack] = useState(false);
@@ -34,12 +40,21 @@ export function PublicBoard({ token }: { token: string }) {
   }, []);
 
   if (!ev) {
+    const fetching = IS_REMOTE && (guest === "loading" || guest === "idle" || !ready);
     return (
       <main className="flex flex-1 items-center justify-center p-8 text-center">
         <div>
           <Crest size={48} />
-          <h1 className="display mt-4 text-2xl">That board isn’t live</h1>
-          <p className="label mt-2">The link may have expired, or the day hasn’t started.</p>
+          <h1 className="display mt-4 text-2xl">
+            {fetching ? "Fetching the board…" : guest === "offline" ? "No signal" : "That board isn’t live"}
+          </h1>
+          <p className="label mt-2">
+            {fetching
+              ? "One moment."
+              : guest === "offline"
+                ? "Couldn’t reach the scoreboard — it’ll keep trying."
+                : "The link may have expired, or the day hasn’t started."}
+          </p>
         </div>
       </main>
     );
@@ -53,6 +68,9 @@ export function PublicBoard({ token }: { token: string }) {
   const card = select.card(db, ev.teeId);
   const byHole = Boolean(card);
 
+  // What the board ranks on follows the event's format: Stableford points
+  // (high wins), or medal net / gross strokes (low wins — negated for rank()).
+  const fmt = ev.format;
   const rows = rank(
     entries.map((en) => {
       const player = db.players.find((p) => p.id === en.playerId)!;
@@ -61,20 +79,26 @@ export function PublicBoard({ token }: { token: string }) {
       const live = byHole && holes.length
         ? liveTotals(holes, card!, en.playingHandicap ?? 0)
         : null;
+      const gross = live ? live.strokes : round?.gross ?? null;
+      const thru = live ? live.thru : round?.stableford != null ? 18 : 0;
+      // Strokes 12 holes in aren't comparable with a finished 18 — medal and
+      // gross boards only rank completed cards; Stableford ranks the running total.
+      const complete = thru === 18;
       return {
-        en, player,
-        points: live ? live.points : round?.stableford ?? null,
-        thru: live ? live.thru : round?.stableford != null ? 18 : 0,
-        gross: live ? live.strokes : round?.gross ?? null,
+        en, player, gross, thru,
+        points:
+          fmt === "medal" ? (complete ? round?.net ?? (gross == null || en.playingHandicap == null ? null : gross - en.playingHandicap) : null) :
+          fmt === "gross" ? (complete ? gross : null) :
+          live ? live.points : round?.stableford ?? null,
       };
     }),
-    (r) => (r.thru === 0 ? null : r.points)
+    (r) => (r.thru === 0 || r.points == null ? null : fmt === "stableford" ? r.points : -r.points)
   );
 
   const started = rows.filter((r) => r.thru > 0).length;
 
   return (
-    <main className="flex-1 px-4 py-6 sm:py-10">
+    <main className="safe-top flex-1 px-4 py-6 sm:py-10">
       <div className="mx-auto w-full max-w-xl">
         {/* ------------------------------------------------- ticker head -- */}
         <header className="rise">
@@ -110,8 +134,10 @@ export function PublicBoard({ token }: { token: string }) {
         {/* ------------------------------------------------------- board -- */}
         <div className="board mt-6 rise" style={{ animationDelay: "90ms" }}>
           <div className="flex items-center justify-between border-b border-[var(--color-line)] px-4 py-2.5">
-            <span className="label">Stableford</span>
-            <span className="label">{byHole ? "Thru · Pts" : "Points"}</span>
+            <span className="label">{fmt === "medal" ? "Medal" : fmt === "gross" ? "Gross strokeplay" : "Stableford"}</span>
+            <span className="label">
+              {fmt === "medal" ? "Net" : fmt === "gross" ? "Gross" : byHole ? "Thru · Pts" : "Points"}
+            </span>
           </div>
 
           {rows.map((r, i) => (
@@ -128,22 +154,22 @@ export function PublicBoard({ token }: { token: string }) {
               }
               style={{ animationDelay: `${120 + Math.min(i, 16) * 30}ms` }}
             >
-              {r.thru > 0 && r.position <= 3 ? (
+              {r.thru > 0 && r.points != null && r.position <= 3 ? (
                 <span className={`medal medal-${["gold", "silver", "bronze"][r.position - 1]}`}>
                   {r.position}
                 </span>
               ) : (
-                <span className="pos">{r.thru === 0 ? "–" : `${r.position}${r.tied ? "=" : ""}`}</span>
+                <span className="pos">{r.thru === 0 || r.points == null ? "–" : `${r.position}${r.tied ? "=" : ""}`}</span>
               )}
               <span className="min-w-0">
                 <span className="nm block truncate">{r.player.name}</span>
                 <span className="label mt-0.5 block">
                   {r.thru === 0
                     ? `still out · HCP ${formatPlayingHandicap(r.en.playingHandicap)}`
-                    : `${byHole ? `thru ${r.thru}` : `${r.gross} gross`} · HCP ${formatPlayingHandicap(r.en.playingHandicap)}`}
+                    : `${byHole && r.thru < 18 ? `thru ${r.thru}` : `${r.gross} gross`} · HCP ${formatPlayingHandicap(r.en.playingHandicap)}`}
                 </span>
               </span>
-              <span className="pts">{r.thru === 0 ? "–" : r.points}</span>
+              <span className="pts">{r.points ?? "–"}</span>
             </div>
           ))}
         </div>

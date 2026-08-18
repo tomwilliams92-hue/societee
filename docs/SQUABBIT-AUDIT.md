@@ -25,9 +25,9 @@ skippable.
 | Handicap derivation shown inline | ✅ | The ⓘ on every entry row |
 | Live leaderboard with thru/position | ✅ | Plus "still out" players shown, not hidden |
 | Stableford | ✅ | Verified against the WHS formula end to end |
-| 46 tournament formats (skins, matchplay, Ryder Cup…) | ⛔ | One format done perfectly beats 46 configured in two hours. Formats are the "settings daunting" complaint. Medal/skins later if organisers ask |
+| 46 tournament formats (skins, matchplay, Ryder Cup…) | 🟡 | 5 Aug: wizard has their format-picker step (search, descriptions, Select) but lists ONLY what the engine really scores — Stableford, Medal, Gross. No dead rows. Skins/matchplay still ⛔ until organisers ask |
 | 41 mid-round side games | ⛔ | Same reason. NTP + longest drive covered |
-| Multi-round tournaments | 🔴 | Real gap — the Order of Merit covers seasons but not a 2-day trip. Worth building |
+| Multi-round tournaments | ✅ | 5 Aug: the event wizard is their five-step flow (name → formats → rounds → course → players); "multiple rounds" with a per-round course replaces the separate trip flow, combined series board included |
 | Team formats / flights / purses | 🔴 | After real-user feedback, not before |
 | Scorecard markers (attest, orange unofficial, red discrepancy) | 🔴 | Their best idea. Needs the shared DB — queued behind the anon key |
 | Offline scoring with sync | 🟡 | Demo is offline by nature; real offline sync needs the DB wiring |
@@ -49,7 +49,7 @@ skippable.
 | Squabbit | Status | Societee |
 |---|---|---|
 | Season leagues with standings | ✅ | Order of Merit, best-N, counts ordinary club rounds too |
-| Course database (39k+ courses) | 🟡 | 5 courses with **verified** cards vs their large-but-erroneous DB (wrong-card complaints in their reviews). Organiser card entry validates SI/par |
+| Course database (39k+ courses) | ✅ | 5 Aug: every UK course — 2,909 from OSM (ODbL) — searchable in the wizard. Names/locations only, deliberately: no free licensed source of tee ratings exists, so the organiser types par/CR/slope off the printed card once (validated), vs their large-but-erroneous DB (wrong-card complaints in their reviews). 5 courses still ship fully verified cards |
 | Tee sheet / schedule / shotgun starts | 🟡 | Groups with start holes; no tee times yet |
 | Stats (streaks, blow-ups, 50+ league stats) | 🔴 | Season stats are the natural "earn the subscription" feature |
 | Photos / activity feed | 🔴 | WhatsApp does this today; revisit |
@@ -78,5 +78,6 @@ we are ahead: **navigation**, **zero-account joining all the way to scoring**,
 and everything being one tap deep. Their moat is years of accumulated features;
 ours is that a 55-year-old society captain can run a day without a manual.
 
-Next three to close, in order: **markers** (needs DB), **multi-round events**,
-**push notifications**.
+Next three to close, in order: **markers** (needs DB), **push notifications**,
+**registration/self-signup** (the wizard already shows the toggle, disabled
+until shared accounts). Multi-round events and the course database closed 5 Aug.

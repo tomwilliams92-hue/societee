@@ -4,6 +4,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 import { usePathname } from "next/navigation";
 import { useDB, useReady, select } from "@/lib/store";
+import { IS_REMOTE } from "@/lib/supabase/config";
+import { useSync } from "@/lib/supabase/sync";
 
 /**
  * The bottom tab bar — the single strongest "this is an app" signal on iOS.
@@ -20,10 +22,17 @@ function BottomNavInner() {
   const db = useDB();
   const ready = useReady();
   const path = usePathname();
+  const sync = useSync();
+  const isNative =
+    typeof window !== "undefined" &&
+    Boolean((window as unknown as { Capacitor?: { isNativePlatform?: () => boolean } })
+      .Capacitor?.isNativePlatform?.());
 
   // Guest screens keep zero chrome.
-  if (path.startsWith("/live-board") || path.startsWith("/scorecard")) return null;
+  if (path.startsWith("/live-board") || path.startsWith("/scorecard") || path.startsWith("/register")) return null;
   if (!ready) return null;
+  // Behind the front door there is nothing to navigate to yet.
+  if (IS_REMOTE && !sync.email) return null;
 
   const live = select.liveToday(db);
   const next = live ? undefined : select.nextUp(db);
@@ -42,7 +51,7 @@ function BottomNavInner() {
     { href: "/", label: "Home", icon: <HomeIcon />, on: path === "/" },
     {
       href: "/groups",
-      label: "Groups",
+      label: "Societies",
       icon: <GroupsIcon />,
       on: path.startsWith("/groups") || path.startsWith("/society"),
     },
@@ -62,8 +71,10 @@ function BottomNavInner() {
       {/* spacer so page content never hides behind the fixed bar */}
       <div className="h-16" aria-hidden />
       <nav
-        className="fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-line)] bg-[rgba(6,8,10,0.92)] backdrop-blur-md"
-        style={{ paddingBottom: "env(safe-area-inset-bottom)" }}
+        className="bottom-nav fixed inset-x-0 bottom-0 z-40 border-t border-[var(--color-line)] bg-[rgba(6,8,10,0.92)] backdrop-blur-md"
+        // The iOS shell is a WKWebView, not display-mode:standalone — it needs
+        // the home-indicator inset the CSS media query can't give it.
+        style={isNative ? { paddingBottom: "env(safe-area-inset-bottom)" } : undefined}
         aria-label="Main"
       >
         <div className="mx-auto flex max-w-lg items-stretch justify-around">

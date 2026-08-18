@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { useState } from "react";
 import { Crest } from "@/components/Crest";
-import { useDB, select, actions } from "@/lib/store";
+import { useDB, useReady, select, actions } from "@/lib/store";
 import { courseById, teeById } from "@/lib/courses";
 import { formatPlayingHandicap, holePoints, liveTotals, strokesOnHole } from "@/lib/scoring";
+import { IS_REMOTE } from "@/lib/supabase/config";
+import { guestScoreHole, useGuestGroup } from "@/lib/supabase/guest";
+import { useSync } from "@/lib/supabase/sync";
 
 /**
  * The on-course screen. One fourball, one hole at a time, one phone.
@@ -16,11 +19,27 @@ import { formatPlayingHandicap, holePoints, liveTotals, strokesOnHole } from "@/
  */
 export function GroupScorer({ token }: { token: string }) {
   const db = useDB();
+  const ready = useReady();
+  const sync = useSync();
   const group = select.groupByToken(db, token);
   const ev = group ? select.event(db, group.eventId) : undefined;
+  // A fourball on someone else's phone: the token fetches the group through
+  // the RPC; writes go back the same way, with the server computing points.
+  const guest = useGuestGroup(token, IS_REMOTE && ready && !group);
+  const guestMode = IS_REMOTE && !sync.email;
   const [hole, setHole] = useState<number | null>(null);
 
-  if (!group || !ev) return <Dead>That scoring link isn’t live.</Dead>;
+  if (!group || !ev) {
+    return (
+      <Dead>
+        {IS_REMOTE && (guest === "loading" || guest === "idle" || !ready)
+          ? "Fetching your group…"
+          : guest === "offline"
+            ? "No signal — it'll keep trying. Scores already entered are safe."
+            : "That scoring link isn’t live."}
+      </Dead>
+    );
+  }
 
   const tee = teeById(ev.teeId);
   const course = courseById(ev.courseId);
@@ -49,7 +68,7 @@ export function GroupScorer({ token }: { token: string }) {
   );
 
   return (
-    <main className="mx-auto flex min-h-screen w-full max-w-lg flex-col px-4 pb-6">
+    <main className="safe-top mx-auto flex min-h-screen w-full max-w-lg flex-col px-4 pb-6">
       {/* ---------------------------------------------------------- head -- */}
       <header className="flex items-center justify-between gap-3 py-4">
         <Link href={`/live-board?b=${ev.shareToken}`} className="flex items-center gap-2">
@@ -108,8 +127,13 @@ export function GroupScorer({ token }: { token: string }) {
           const pts = holePoints(strokes, info.par, info.strokeIndex, ph);
           const totals = liveTotals(holes, card, ph);
 
-          const set = (v: number | null) =>
-            actions.setHoleScore(ev.id, player.id, current, v);
+          const set = (v: number | null) => {
+            const clamped = v == null ? null : Math.max(1, Math.min(15, v));
+            // optimistic local write keeps the steppers instant; for a guest
+            // the token RPC is the real one and the next poll reconciles
+            actions.setHoleScore(ev.id, player.id, current, clamped);
+            if (guestMode) void guestScoreHole(token, player.id, current, clamped);
+          };
 
           return (
             <div key={entry.id} className="card px-3 py-3">
@@ -154,7 +178,7 @@ export function GroupScorer({ token }: { token: string }) {
 
               <div className="mt-2.5 flex items-center justify-between border-t border-[var(--line-soft)] pt-2">
                 <span className="label">
-                  Thru {totals.thru} · {totals.strokes} strokes
+                  Thru {totals.thru} · {totals.strokes} gross · {totals.net} net
                 </span>
                 <span className="num text-[1.05rem]" style={{ color: "var(--color-acid)" }}>
                   {totals.points} pts

@@ -42,29 +42,31 @@ export function ScorecardModal({
       diff === -1 ? "mk-birdie" :
       diff === 0 ? "" :
       diff === 1 ? "mk-bogey" : "mk-double";
-    return { ...h, s, shots, pts, mk };
+    return { ...h, s, shots, net: s == null ? null : s - shots, pts, mk };
   };
 
   const nine = (from: number) => (card ?? []).filter((h) => h.hole >= from && h.hole < from + 9).map(row);
   const front = nine(1);
   const back = nine(10);
-  const sum = (rows: ReturnType<typeof row>[], k: "s" | "pts") =>
+  const sum = (rows: ReturnType<typeof row>[], k: "s" | "net" | "pts") =>
     rows.reduce((a, r) => a + ((r[k] as number | null) ?? 0), 0);
   const played = (rows: ReturnType<typeof row>[]) => rows.filter((r) => r.s != null).length;
 
+  const COLS = "grid-cols-[1.6rem_2.6rem_1fr_2.4rem_2.2rem_2.4rem]";
   const Nine = ({ rows, title }: { rows: ReturnType<typeof row>[]; title: string }) => (
     <div>
-      <div className="grid grid-cols-[2rem_2.2rem_1fr_2.4rem_2.4rem] items-center gap-x-1 border-b border-[var(--color-line)] pb-1">
+      <div className={`grid ${COLS} items-center gap-x-1 border-b border-[var(--color-line)] pb-1`}>
         <span className="label !text-[0.58rem]">{title}</span>
         <span className="label !text-[0.58rem] text-center">Par·SI</span>
         <span className="label !text-[0.58rem]">Shots</span>
         <span className="label !text-[0.58rem] text-center">Gross</span>
+        <span className="label !text-[0.58rem] text-center">Net</span>
         <span className="label !text-[0.58rem] text-center">Pts</span>
       </div>
       {rows.map((r) => (
         <div
           key={r.hole}
-          className="grid grid-cols-[2rem_2.2rem_1fr_2.4rem_2.4rem] items-center gap-x-1 border-b border-[var(--line-soft)] py-[0.32rem]"
+          className={`grid ${COLS} items-center gap-x-1 border-b border-[var(--line-soft)] py-[0.32rem]`}
         >
           <span className="num text-[0.85rem] text-[var(--color-dim)]">{r.hole}</span>
           <span className="mono text-center text-[0.68rem] text-[var(--color-dim)]">
@@ -77,6 +79,12 @@ export function ScorecardModal({
             {r.s ?? "–"}
           </span>
           <span
+            className="num text-center text-[0.9rem]"
+            style={{ color: r.net == null ? "var(--color-line)" : "var(--color-text)" }}
+          >
+            {r.net ?? "–"}
+          </span>
+          <span
             className="num text-center text-[0.95rem]"
             style={{ color: r.pts == null ? "var(--color-line)" : r.pts === 0 ? "var(--color-dim)" : "var(--color-text)" }}
           >
@@ -84,11 +92,12 @@ export function ScorecardModal({
           </span>
         </div>
       ))}
-      <div className="grid grid-cols-[2rem_2.2rem_1fr_2.4rem_2.4rem] items-center gap-x-1 py-1.5">
+      <div className={`grid ${COLS} items-center gap-x-1 py-1.5`}>
         <span className="label !text-[0.58rem]">{title === "Out" ? "OUT" : "IN"}</span>
         <span />
         <span />
         <span className="num text-center text-[0.95rem]">{played(rows) ? sum(rows, "s") : "–"}</span>
+        <span className="num text-center text-[0.95rem]">{played(rows) ? sum(rows, "net") : "–"}</span>
         <span className="num text-center text-[0.95rem]" style={{ color: "var(--color-acid)" }}>
           {played(rows) ? sum(rows, "pts") : "–"}
         </span>
@@ -99,7 +108,7 @@ export function ScorecardModal({
   return (
     <div className="overlay" onClick={onClose} role="dialog" aria-label={`${player.name}'s scorecard`}>
       <div
-        className="card max-h-[88vh] w-full max-w-sm overflow-y-auto p-4"
+        className="card max-h-full w-full max-w-sm overflow-y-auto p-4"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="flex items-start justify-between gap-3 border-b border-[var(--color-line)] pb-3">
@@ -144,11 +153,12 @@ export function ScorecardModal({
             <div className="mt-1 flex items-baseline justify-between border-t border-[var(--color-line)] pt-2.5">
               <span className="label">Total</span>
               <span className="num text-[1.05rem]">
-                {sum([...front, ...back], "s")} gross ·{" "}
+                {sum([...front, ...back], "s")} gross · {sum([...front, ...back], "net")} net ·{" "}
                 <span style={{ color: "var(--color-acid)" }}>{sum([...front, ...back], "pts")} pts</span>
               </span>
             </div>
             <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-1">
+              <span className="label !text-[0.55rem]"><span className="mono text-[var(--color-text)]">4·13</span> = par 4, SI 13</span>
               <span className="label !text-[0.55rem]"><span className="mk mk-birdie !inline-grid !h-4 !w-4 !text-[0.5rem]"> </span> birdie</span>
               <span className="label !text-[0.55rem]"><span className="mk mk-eagle !inline-grid !h-4 !w-4 !text-[0.5rem]"> </span> eagle</span>
               <span className="label !text-[0.55rem]"><span className="mk mk-bogey !inline-grid !h-4 !w-4 !text-[0.5rem]"> </span> bogey</span>

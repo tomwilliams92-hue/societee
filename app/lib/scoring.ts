@@ -146,17 +146,18 @@ export function liveTotals(
   entered: { hole: number; strokes: number | null }[],
   card: HoleInfo[],
   playingHcp: number
-): { thru: number; points: number; strokes: number } {
-  let thru = 0, points = 0, strokes = 0;
+): { thru: number; points: number; strokes: number; net: number } {
+  let thru = 0, points = 0, strokes = 0, net = 0;
   for (const e of entered) {
     if (e.strokes == null || e.strokes <= 0) continue;
     const info = card.find((h) => h.hole === e.hole);
     if (!info) continue;
     thru += 1;
     strokes += e.strokes;
+    net += e.strokes - strokesOnHole(playingHcp, info.strokeIndex);
     points += holePoints(e.strokes, info.par, info.strokeIndex, playingHcp) ?? 0;
   }
-  return { thru, points, strokes };
+  return { thru, points, strokes, net };
 }
 
 /**

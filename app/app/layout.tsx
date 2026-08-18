@@ -2,7 +2,11 @@ import type { Metadata, Viewport } from "next";
 import { Archivo, Azeret_Mono } from "next/font/google";
 import "./globals.css";
 import { BottomNav } from "@/components/BottomNav";
+import { ScrollReset } from "@/components/ScrollReset";
 import { SWRegister } from "@/components/SWRegister";
+import { SyncBoot } from "@/components/SyncBoot";
+import { AuthGate } from "@/components/AuthGate";
+import { VersionWatch } from "@/components/VersionWatch";
 
 /** Set only for the GitHub Pages build, which serves from /<repo>/. */
 const BASE = process.env.PAGES_BASE_PATH ?? "";
@@ -59,10 +63,18 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
       lang="en-GB"
       className={`${archivo.variable} ${monoTech.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
-        {children}
-        <BottomNav />
+      <body>
+        {/* keeps the system clock readable whatever scrolls beneath it */}
+        <div aria-hidden className="statusbar-scrim" />
+        {/* the app scrolls inside this shell — see .app-scroll in globals.css */}
+        <div id="app-scroll" className="app-scroll">
+          <AuthGate>{children}</AuthGate>
+          <BottomNav />
+          <ScrollReset />
+        </div>
         <SWRegister />
+        <SyncBoot />
+        <VersionWatch />
       </body>
     </html>
   );

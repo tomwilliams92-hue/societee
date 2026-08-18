@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Header, Footer, SectionTitle } from "@/components/Chrome";
+import { ConfirmDelete } from "@/components/ConfirmDelete";
 import { Leaderboard, type BoardRow } from "@/components/Leaderboard";
 import { useDB, select, actions } from "@/lib/store";
 import { bestNTotal, formatHandicap, parseHandicap, rank } from "@/lib/scoring";
@@ -11,8 +13,10 @@ import { SocietyBadge } from "@/components/Badge";
 
 export function SocietyView({ slug }: { slug: string }) {
   const db = useDB();
+  const router = useRouter();
   const society = select.society(db, slug);
   const [tab, setTab] = useState<"menu" | "merit" | "events" | "players">("menu");
+  const [confirmDel, setConfirmDel] = useState<null | "society" | "season">(null);
 
   if (!society) {
     return (
@@ -150,8 +154,53 @@ export function SocietyView({ slug }: { slug: string }) {
             </p>
           ))}
 
+        {tab === "merit" && season && (
+          <p className="mt-6 text-center">
+            <button className="label underline underline-offset-4 hover:text-[var(--color-live)]"
+                    onClick={() => setConfirmDel("season")}>
+              Delete this season
+            </button>
+          </p>
+        )}
+
         {tab === "events" && <EventsTab societyId={society.id} />}
         {tab === "players" && <PlayersTab societyId={society.id} />}
+
+        {tab === "menu" && (
+          <p className="mt-10 text-center">
+            <button className="label underline underline-offset-4 hover:text-[var(--color-live)]"
+                    onClick={() => setConfirmDel("society")}>
+              Delete this society
+            </button>
+          </p>
+        )}
+
+        {confirmDel === "society" && (
+          <ConfirmDelete
+            what="society"
+            name={society.name}
+            loses={[
+              `${events.length} event${events.length === 1 ? "" : "s"} and every card in them`,
+              `${players.length} player${players.length === 1 ? "" : "s"} and their whole round history`,
+              `${db.seasons.filter((s) => s.societyId === society.id).length} season standings`,
+              "every share and scoring link (they stop working immediately)",
+            ]}
+            onConfirm={() => { actions.deleteSociety(society.id); router.push("/"); }}
+            onClose={() => setConfirmDel(null)}
+          />
+        )}
+        {confirmDel === "season" && season && (
+          <ConfirmDelete
+            what="season"
+            name={season.name}
+            loses={[
+              "the standings table and its best-N totals",
+              "nothing else — every event and card stays exactly where it is",
+            ]}
+            onConfirm={() => { actions.deleteSeason(season.id); setConfirmDel(null); setTab("menu"); }}
+            onClose={() => setConfirmDel(null)}
+          />
+        )}
       </main>
 
       <Footer />

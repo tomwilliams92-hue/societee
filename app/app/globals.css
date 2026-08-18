@@ -55,9 +55,48 @@ body {
 body {
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
-  padding-bottom: env(safe-area-inset-bottom);
 }
 header.sticky { padding-top: env(safe-area-inset-top); }
+
+/* The system clock must stay readable on every screen. Sticky headers absorb
+   the inset, but modals, keyboard-panned pages and chrome-free screens can all
+   end up with content under the status bar — so a fixed scrim permanently backs
+   that strip. Sits above the overlay (z-60) so the clock survives modals too. */
+.statusbar-scrim {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  height: env(safe-area-inset-top);
+  background: rgba(6, 8, 10, 0.88);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  z-index: 80;
+  pointer-events: none;
+}
+
+/*
+ * APP-SHELL SCROLL — the fix for the tab bar creeping in mobile Safari.
+ *
+ * In a browser tab, Safari's toolbar collapses when the DOCUMENT scrolls, and
+ * while it animates, every fixed element and every safe-area inset moves with
+ * it — that was the bar hopping a few millimetres between pages. So the
+ * document never scrolls: the body is a fixed-height shell and the app scrolls
+ * inside .app-scroll. No document scroll → no toolbar dance → nothing moves.
+ */
+html, body { height: 100%; }
+body { overflow: hidden; }
+.app-scroll {
+  height: 100%;
+  overflow-y: auto;
+  overscroll-behavior-y: none;
+  -webkit-overflow-scrolling: touch;
+  display: flex;
+  flex-direction: column;
+}
+/* The home-indicator strip only exists as reserved space in the installed app
+   (in a Safari tab the toolbar covers it) — and there it never changes size. */
+@media (display-mode: standalone) {
+  body { padding-bottom: env(safe-area-inset-bottom); }
+}
 
 /* ----------------------------------------------------------------- type -- */
 
@@ -206,6 +245,19 @@ header.sticky { padding-top: env(safe-area-inset-top); }
   transition: background 0.15s, border-color 0.15s, transform 0.1s;
 }
 .btn:active { transform: translateY(1px); }
+/* A step that isn't finished greys its Continue out, Squabbit-style. */
+.btn:disabled { opacity: 0.35; cursor: default; pointer-events: none; }
+
+/*
+ * In Safari the safe-area inset changes as the browser toolbar collapses and
+ * expands, which made the tab bar hop a few millimetres between pages. The
+ * inset padding only applies in the installed app, where it's constant (the
+ * home-indicator strip); in a browser tab Safari's own chrome covers that zone.
+ */
+.bottom-nav { padding-bottom: 0; }
+@media (display-mode: standalone) {
+  .bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
+}
 
 .btn-primary { background: var(--color-acid); color: #06080a; }
 .btn-primary:hover { background: #4dee1f; }
@@ -362,8 +414,14 @@ header.sticky { padding-top: env(safe-area-inset-top); }
   background: rgba(2, 4, 5, 0.78);
   backdrop-filter: blur(3px);
   display: grid; place-items: center;
-  padding: 1rem;
+  /* installed to the Home Screen the app runs edge to edge — keep modals
+     clear of the clock and the home indicator */
+  padding: max(1rem, env(safe-area-inset-top)) 1rem max(1rem, env(safe-area-inset-bottom));
 }
+
+/* Chrome-free screens (live board, on-course scorer) have no sticky header to
+   absorb the status-bar inset, so they take it themselves. */
+.safe-top { padding-top: max(env(safe-area-inset-top), 0px); }
 
 /* -------------------------------------------------------------- motion -- */
 

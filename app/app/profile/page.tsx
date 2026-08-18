@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Header, Footer, SectionTitle } from "@/components/Chrome";
 import { useDB, actions } from "@/lib/store";
 import { formatHandicap, parseHandicap } from "@/lib/scoring";
+import { IS_REMOTE } from "@/lib/supabase/config";
+import { migrateDeviceData, signIn, signOut, useSync } from "@/lib/supabase/sync";
 
 /**
  * The device owner's own details. One place to keep your handicap index; saving
@@ -61,6 +63,8 @@ export default function ProfilePage() {
             name — your organiser never has to chase it.
           </p>
         </section>
+
+        <AccountSection />
 
         <SectionTitle>Details</SectionTitle>
         <form
@@ -166,6 +170,111 @@ export default function ProfilePage() {
       </main>
 
       <Footer />
+    </>
+  );
+}
+
+/**
+ * The account block — only rendered when the app is built with database keys.
+ * Signed out it's a two-field form; signed in it's a status line, a one-time
+ * "move this phone's data" button, and sign out.
+ */
+function AccountSection() {
+  const sync = useSync();
+  const [email, setEmail] = useState("");
+  const [pw, setPw] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const [migrated, setMigrated] = useState<string | null>(null);
+
+  if (!IS_REMOTE) return null;
+
+  const dot: Record<string, string> = {
+    live: "var(--color-acid)", syncing: "#ffd94d", offline: "#ffd94d",
+    error: "var(--color-live)", signedout: "var(--color-dim)", off: "var(--color-dim)",
+  };
+
+  return (
+    <>
+      <SectionTitle
+        aside={
+          <span className="label flex items-center gap-1.5">
+            <span aria-hidden className="inline-block h-2 w-2 rounded-full"
+                  style={{ background: dot[sync.status] }} />
+            {sync.status === "live" ? "synced" :
+             sync.status === "syncing" ? "syncing…" :
+             sync.status === "offline" ? "offline — queued" :
+             sync.status === "error" ? "sync error" : "signed out"}
+          </span>
+        }
+      >
+        Account
+      </SectionTitle>
+
+      {sync.email ? (
+        <div className="card grid gap-3 p-4">
+          <p className="text-[0.9rem]">
+            Signed in as <span className="name">{sync.email}</span>
+          </p>
+          {sync.status === "error" && sync.detail && (
+            <p className="label !normal-case !tracking-normal" style={{ color: "#ff7a7a" }}>{sync.detail}</p>
+          )}
+          <p className="label !normal-case !tracking-normal">
+            Everything you organise saves to your account as you work — this phone, the iMac,
+            anywhere you sign in sees the same societies. QR codes now work on other people’s
+            phones.
+          </p>
+          {migrated ? (
+            <p className="label !normal-case !tracking-normal" style={{ color: "var(--color-acid)" }}>{migrated}</p>
+          ) : (
+            <button
+              className="btn btn-ghost"
+              onClick={() => {
+                const r = migrateDeviceData();
+                setMigrated(
+                  r
+                    ? `Moved ${r.societies} societ${r.societies === 1 ? "y" : "ies"}, ${r.players} players and ${r.rounds} rounds into your account.`
+                    : "Nothing on this phone to move."
+                );
+              }}
+            >
+              Move this phone’s existing data into the account
+            </button>
+          )}
+          <button className="btn btn-ghost" onClick={() => void signOut()}>Sign out</button>
+        </div>
+      ) : (
+        <form
+          className="card grid gap-3 p-4"
+          onSubmit={(e) => {
+            e.preventDefault();
+            setBusy(true); setMsg(null);
+            void signIn(email.trim(), pw).then((err) => {
+              setBusy(false);
+              setMsg(err);
+            });
+          }}
+        >
+          <p className="label !normal-case !tracking-normal">
+            Sign in and your societies live in the shared database — same data on every device,
+            and share links that work on anyone’s phone.
+          </p>
+          <label className="grid gap-1.5">
+            <span className="label">Email</span>
+            <input className="field" type="email" autoComplete="email" required
+                   value={email} onChange={(e) => setEmail(e.target.value)} />
+          </label>
+          <label className="grid gap-1.5">
+            <span className="label">Password</span>
+            <input className="field" type="password" autoComplete="current-password" required minLength={8}
+                   value={pw} onChange={(e) => setPw(e.target.value)} />
+          </label>
+          {msg && <p className="label !normal-case !tracking-normal" style={{ color: "#ff7a7a" }}>{msg}</p>}
+          <button className="btn btn-primary" disabled={busy || !email.trim() || pw.length < 8}>
+            {busy ? "Signing in…" : "Sign in"}
+          </button>
+        </form>
+      )}
     </>
   );
 }

@@ -1,0 +1,16 @@
+{
+  "name": "scripts",
+  "version": "1.0.0",
+  "description": "Run against the database directly, outside the app. Both need a Postgres connection string; the pooler one works from a normal IPv4 network, the `db.<ref>.supabase.co` direct host is IPv6-only.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "module",
+  "dependencies": {
+    "pg": "^8.22.0"
+  }
+}

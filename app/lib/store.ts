@@ -15,13 +15,20 @@
 
 import { useEffect, useState, useSyncExternalStore } from "react";
 import type {
-  EventEntry, EventGroup, GolfEvent, HoleInfo, HoleScore, Player, Round, Season,
-  Series, SideComp, Society,
+  EventEntry, EventGroup, GolfEvent, HoleInfo, HoleScore, Player, Round, ScoringFormat,
+  Season, Series, SideComp, Society, Tee,
 } from "./types";
-import { teeById } from "./courses";
+import { registerCustomTees, teeById } from "./courses";
 import { courseHandicap, holePoints, playingHandicap } from "./scoring";
+import { IS_REMOTE } from "./supabase/config";
 
-const KEY = "societee.v2";   // bumped: old demo data was stale-dated and cluttered
+/**
+ * Demo mode keeps its key so nothing a device already has is disturbed; remote
+ * mode caches the LAST GOOD SNAPSHOT from Postgres under its own key, which is
+ * what the app opens with on the course when there's no signal.
+ */
+const KEY = IS_REMOTE ? "societee.remote.v1" : "societee.v2";
+const DEMO_KEY = "societee.v2";   // migration reads the old on-device data from here
 const OLD_KEYS = ["societee.v1"];
 
 export type DB = {
@@ -44,6 +51,12 @@ export type DB = {
    */
   cards: Record<string, HoleInfo[]>;
   /**
+   * Tees organisers have added for UK directory courses, keyed by tee id.
+   * A directory course ships as a name only — the organiser types the par, CR
+   * and slope printed on the club's scorecard, once, and it's here for good.
+   */
+  customTees: Record<string, Tee>;
+  /**
    * Whoever holds THIS device. Lets a golfer keep their own handicap index in
    * one place; saving it flows into any player row with the same name. On the
    * shared database this becomes the claim flow (players.claimed_by) — each
@@ -58,14 +71,18 @@ function migrate(db: Partial<DB>): DB {
     societies: db.societies ?? [], players: db.players ?? [], seasons: db.seasons ?? [],
     events: db.events ?? [], groups: db.groups ?? [], entries: db.entries ?? [],
     rounds: db.rounds ?? [], holeScores: db.holeScores ?? [], sideComps: db.sideComps ?? [],
-    series: db.series ?? [], cards: db.cards ?? {},
+    series: db.series ?? [], cards: db.cards ?? {}, customTees: db.customTees ?? {},
     me: db.me ?? null,
   };
 }
 
 /* ---------------------------------------------------------------- seeding -- */
 
-const id = (() => { let n = 0; return (p: string) => `${p}-${(++n).toString(36)}`; })();
+/** Remote ids are uuids so the optimistic row IS the stored row (uuid PKs);
+ *  demo ids stay short and readable. Courses/tees keep text slugs either way. */
+const id = IS_REMOTE
+  ? (_p: string) => crypto.randomUUID()
+  : (() => { let n = 0; return (p: string) => `${p}-${(++n).toString(36)}`; })();
 const token = (n = 7) =>
   Array.from({ length: n }, () => "abcdefghijkmnpqrstuvwxyz23456789"[Math.floor(Math.random() * 32)]).join("");
 
@@ -88,7 +105,8 @@ const PAST: [number, (number | null)[]][] = [
 function seed(): DB {
   const db: DB = {
     societies: [], players: [], seasons: [], events: [], groups: [],
-    entries: [], rounds: [], holeScores: [], sideComps: [], series: [], cards: {}, me: null,
+    entries: [], rounds: [], holeScores: [], sideComps: [], series: [], cards: {},
+    customTees: {}, me: null,
   };
 
   const today = new Date();
@@ -194,7 +212,19 @@ const listeners = new Set<() => void>();
 
 function read(): DB {
   if (cache) return cache;
-  if (typeof window === "undefined") return (cache = seed());
+  if (typeof window === "undefined") return (cache = IS_REMOTE ? migrate({}) : seed());
+  if (IS_REMOTE) {
+    // No fictional seed with a real database behind the app — start from the
+    // cached snapshot (offline) or empty until the first hydrate lands.
+    try {
+      const raw = window.localStorage.getItem(KEY);
+      cache = raw ? migrate(JSON.parse(raw) as Partial<DB>) : migrate({});
+    } catch {
+      cache = migrate({});
+    }
+    registerCustomTees(cache!.customTees);
+    return cache!;
+  }
   try {
     OLD_KEYS.forEach((k) => window.localStorage.removeItem(k));
     const raw = window.localStorage.getItem(KEY);
@@ -210,13 +240,44 @@ function read(): DB {
   } catch {
     cache = seed();
   }
+  registerCustomTees(cache!.customTees);
   return cache!;
+}
+
+/**
+ * Sync taps in here: every commit that came from a USER action is reported so
+ * the remote adapter can push it. Hydrates from the server commit silently —
+ * pushing back what the server just told us would be an echo chamber.
+ */
+const commitHooks = new Set<(db: DB) => void>();
+let silentCommit = false;
+export function onCommit(hook: (db: DB) => void): () => void {
+  commitHooks.add(hook);
+  return () => { commitHooks.delete(hook); };
 }
 
 function commit(next: DB) {
   cache = next;
+  registerCustomTees(next.customTees);
   try { window.localStorage.setItem(KEY, JSON.stringify(next)); } catch { /* private mode */ }
   listeners.forEach((l) => l());
+  if (!silentCommit) commitHooks.forEach((h) => h(next));
+}
+
+/** Replace the synced collections with the server's truth, keeping everything
+ *  device-local (entered cards, custom tees, profile) exactly as it is. */
+export function hydrateRemote(remote: Partial<DB>) {
+  const cur = read();
+  silentCommit = true;
+  try { commit(migrate({ ...cur, ...remote })); } finally { silentCommit = false; }
+}
+
+/** The old on-device demo/local data, for one-time migration to the account. */
+export function readLocalDemoDB(): DB | null {
+  try {
+    const raw = window.localStorage.getItem(DEMO_KEY);
+    return raw ? migrate(JSON.parse(raw) as Partial<DB>) : null;
+  } catch { return null; }
 }
 
 const EMPTY: DB = migrate({});
@@ -248,6 +309,7 @@ export function update(fn: (db: DB) => DB | void) {
 }
 
 export function resetDemo() {
+  if (IS_REMOTE) return; // fictional seed must never reach the real database
   cache = null;
   try { window.localStorage.removeItem(KEY); } catch { /* ignore */ }
   commit(seed());
@@ -284,12 +346,28 @@ export const actions = {
   },
 
   addPlayer(societyId: string, name: string, handicapIndex: number | null) {
+    // WHS indexes run from +9.9 (stored -9.9) to 54.0 — nothing else exists.
+    const hcp = handicapIndex == null ? null : Math.max(-9.9, Math.min(54, handicapIndex));
     update((db) => {
       db.players.push({
         id: id("plr"), societyId, name, shortName: name.split(" ")[0],
-        handicapIndex, active: true,
+        handicapIndex: hcp, active: true,
       });
     });
+  },
+
+  /**
+   * Add a tee to a UK directory course, from the numbers on the printed card.
+   * Same name twice = a correction, and overwrites. Returns the tee.
+   */
+  addTee(courseId: string, input: { name: string; par: number; cr: number; slope: number }): Tee {
+    const slug = input.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "tee";
+    const tee: Tee = {
+      id: `${courseId}--${slug}`, courseId,
+      name: input.name.trim() || "Tee", cr: input.cr, slope: input.slope, par: input.par,
+    };
+    update((db) => { db.customTees[tee.id] = tee; });
+    return tee;
   },
 
   createEvent(
@@ -298,6 +376,8 @@ export const actions = {
       name: string; playsOn: string; teeId: string; playerIds: string[];
       /** name of the trip this day belongs to — found or created per society */
       seriesName?: string;
+      /** how the day is scored; Stableford unless the organiser picked otherwise */
+      format?: ScoringFormat;
       /**
        * Playing handicap allowance, %. 95 is the WHS default for individual
        * Stableford and is *mandatory* in England until 2028. Ireland, Scotland
@@ -305,14 +385,16 @@ export const actions = {
        * to be a choice rather than a constant.
        */
       handicapAllowance?: number;
+      /** players may add themselves via the event's registration link */
+      selfRegister?: boolean;
     }
   ) {
     const tee = teeById(input.teeId)!;
     const ev: GolfEvent = {
       id: id("evt"), societyId, courseId: tee.courseId, teeId: tee.id,
-      name: input.name, playsOn: input.playsOn, format: "stableford",
+      name: input.name, playsOn: input.playsOn, format: input.format ?? "stableford",
       handicapAllowance: input.handicapAllowance ?? 95,
-      status: "live", shareToken: token(),
+      status: "live", shareToken: token(), selfRegister: input.selfRegister ?? false,
     };
     update((db) => {
       const trip = input.seriesName?.trim();
@@ -359,7 +441,10 @@ export const actions = {
     update((db) => {
       const ev = db.events.find((e) => e.id === eventId);
       const tee = teeById(ev?.teeId);
-      const card = tee?.card;
+      // An organiser-entered card (db.cards) wins over the built-in one — it's
+      // the only card a directory course will ever have.
+      const entered = ev?.teeId ? db.cards[ev.teeId] : undefined;
+      const card = entered?.length === 18 ? entered : tee?.card;
       if (!ev || !tee || !card) return;
 
       const entry = db.entries.find((e) => e.eventId === eventId && e.playerId === playerId);
@@ -373,7 +458,7 @@ export const actions = {
       if (!round) {
         round = {
           id: id("rnd"), playerId, eventId, courseId: ev.courseId, teeId: ev.teeId,
-          playedOn: ev.playsOn, format: "stableford", gross: null, adjustedGross: null,
+          playedOn: ev.playsOn, format: ev.format, gross: null, adjustedGross: null,
           courseHandicap: ph, stableford: null, net: null,
           source: "live_scoring", verified: false,
         };
@@ -407,6 +492,9 @@ export const actions = {
    * point or two too many, and more to the high handicappers than the low ones.
    */
   setScore(eventId: string, playerId: string, adjustedGross: number | null) {
+    // 27 is three nines of aces; beyond 180 is ten a hole. Outside that isn't
+    // a golf score, it's a typo — refuse it rather than post nonsense points.
+    if (adjustedGross != null && (adjustedGross < 27 || adjustedGross > 180)) return;
     update((db) => {
       const ev = db.events.find((e) => e.id === eventId)!;
       const tee = teeById(ev.teeId)!;
@@ -424,7 +512,7 @@ export const actions = {
       const row: Round = {
         id: existing?.id ?? id("rnd"), playerId, eventId,
         courseId: ev.courseId, teeId: ev.teeId, playedOn: ev.playsOn,
-        format: "stableford", gross: adjustedGross, adjustedGross,
+        format: ev.format, gross: adjustedGross, adjustedGross,
         courseHandicap: ph, stableford: points, net: adjustedGross - ph,
         source: "live_scoring", verified: false,
       };
@@ -466,6 +554,35 @@ export const actions = {
         playingHandicap: ch == null ? null : playingHandicap(ch, ev.handicapAllowance),
         groupNo: Math.floor(groups / 4) + 1, startHole: 1,
       });
+    });
+  },
+
+  /** A season ends up wrong or duplicated — remove it. Rounds stay; they
+   *  belong to events and players, not to the season's table. */
+  deleteSeason(seasonId: string) {
+    update((db) => { db.seasons = db.seasons.filter((s) => s.id !== seasonId); });
+  },
+
+  /** Remove a society and EVERYTHING inside it. The confirm UI upstream is
+   *  responsible for making sure the organiser knows exactly what that is. */
+  deleteSociety(societyId: string) {
+    update((db) => {
+      const evIds = new Set(db.events.filter((e) => e.societyId === societyId).map((e) => e.id));
+      const plIds = new Set(db.players.filter((p) => p.societyId === societyId).map((p) => p.id));
+      const rounds = db.rounds.filter(
+        (r) => (r.eventId && evIds.has(r.eventId)) || plIds.has(r.playerId)
+      );
+      const roundIds = new Set(rounds.map((r) => r.id));
+      db.holeScores = db.holeScores.filter((h) => !roundIds.has(h.roundId));
+      db.rounds = db.rounds.filter((r) => !roundIds.has(r.id));
+      db.sideComps = db.sideComps.filter((s) => !evIds.has(s.eventId));
+      db.entries = db.entries.filter((e) => !evIds.has(e.eventId));
+      db.groups = db.groups.filter((g) => !evIds.has(g.eventId));
+      db.events = db.events.filter((e) => e.societyId !== societyId);
+      db.seasons = db.seasons.filter((s) => s.societyId !== societyId);
+      db.series = db.series.filter((s) => s.societyId !== societyId);
+      db.players = db.players.filter((p) => p.societyId !== societyId);
+      db.societies = db.societies.filter((s) => s.id !== societyId);
     });
   },
 

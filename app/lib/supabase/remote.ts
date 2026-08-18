@@ -71,6 +71,7 @@ const toEvent = (r: Row): GolfEvent => ({
   handicapAllowance: r.handicap_allowance as number,
   status: r.status as GolfEvent["status"], shareToken: r.share_token as string,
   notes: (r.notes as string) ?? undefined,
+  selfRegister: Boolean(r.self_register),
 });
 const fromEvent = (e: GolfEvent): Row => ({
   id: e.id, society_id: e.societyId, season_id: e.seasonId ?? null,
@@ -78,6 +79,7 @@ const fromEvent = (e: GolfEvent): Row => ({
   plays_on: e.playsOn, tee_time: e.teeTime ?? null, format: e.format,
   handicap_allowance: e.handicapAllowance, status: e.status,
   share_token: e.shareToken, notes: e.notes ?? null,
+  self_register: e.selfRegister ?? false,
 });
 
 const toGroup = (r: Row): EventGroup => ({
@@ -141,7 +143,8 @@ export const map = {
 
 const EMPTY_DB: DB = {
   societies: [], players: [], seasons: [], events: [], groups: [],
-  entries: [], rounds: [], holeScores: [], sideComps: [], series: [], cards: {}, me: null,
+  entries: [], rounds: [], holeScores: [], sideComps: [], series: [], cards: {},
+  customTees: {}, me: null,
 };
 
 /**
