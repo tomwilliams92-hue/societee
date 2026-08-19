@@ -229,7 +229,7 @@ export default function Home() {
                 key={s.id}
                 href={`/society?s=${s.id}`}
                 className="card flex min-w-0 items-center gap-3.5 p-3.5 transition-transform hover:-translate-y-0.5 rise"
-                style={{ animationDelay: `${i * 60}ms` }}
+                style={{ animationDelay: `${i * 30}ms` }}
               >
                 <SocietyBadge society={s} size={54} rounded={12} />
                 <span className="min-w-0 flex-1">

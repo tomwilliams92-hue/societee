@@ -6,7 +6,8 @@ export function Header({ back }: { back?: { href: string; label: string } }) {
   // home; the left slot is the back button's — empty on Home, never anything
   // else. Chrome that stays put reads as an app, not a website.
   return (
-    <header className="sticky top-0 z-30 border-b border-[var(--color-line)] bg-[rgba(6,8,10,0.88)] backdrop-blur-md">
+    // solid header, no backdrop blur — see .statusbar-scrim note in globals.css
+    <header className="sticky top-0 z-30 border-b border-[var(--color-line)] bg-[rgba(6,8,10,0.96)]">
       <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-3 px-4">
         {back ? (
           // An unmissable back button, not a breadcrumb you have to discover.

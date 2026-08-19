@@ -481,7 +481,7 @@ function NewGame() {
               key={k}
               className="card rise min-w-0 p-4 text-left transition-transform hover:-translate-y-0.5"
               style={{
-                animationDelay: `${i * 70}ms`,
+                animationDelay: `${i * 35}ms`,
                 borderColor: `color-mix(in srgb, ${color} 40%, transparent)`,
                 background: `linear-gradient(135deg, color-mix(in srgb, ${color} 9%, transparent), transparent 55%)`,
               }}

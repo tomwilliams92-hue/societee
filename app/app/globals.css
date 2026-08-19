@@ -66,9 +66,9 @@ header.sticky { padding-top: env(safe-area-inset-top); }
   position: fixed;
   top: 0; left: 0; right: 0;
   height: env(safe-area-inset-top);
-  background: rgba(6, 8, 10, 0.88);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  /* solid, not backdrop-blur: a permanent full-width blur layer makes iOS
+     re-composite the whole app on every scrolled frame — it read as lag */
+  background: rgba(6, 8, 10, 0.94);
   z-index: 80;
   pointer-events: none;
 }
@@ -429,7 +429,10 @@ body { overflow: hidden; }
   from { opacity: 0; transform: translateY(7px); }
   to   { opacity: 1; transform: none; }
 }
-.rise { animation: rise 0.4s cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+.rise { animation: rise 0.25s cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+
+/* A tapped card should push back immediately — perceived speed is feedback. */
+a.card:active, button.card:active { transform: translateY(1px) scale(0.995); transition: transform 0.05s; }
 
 /* A score that just changed flashes the accent, like a live scoreboard */
 @keyframes flash {
