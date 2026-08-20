@@ -1,7 +1,26 @@
 # Societee — the to-do list
 
-Kept honest on 5 Aug 2026. Feature-by-feature evidence lives in
+Kept honest on 20 Aug 2026. Feature-by-feature evidence lives in
 [SQUABBIT-AUDIT.md](SQUABBIT-AUDIT.md); this file is the order of work.
+
+## THE SEPTEMBER PUSH — agreed 20 Aug 2026, done by 30 September
+
+The stagnation-killer first, then features, then the proof point:
+
+- [ ] **Now:** database repaired end to end — Tom pastes `supabase/upgrade3.sql`
+      once (rebuilds every policy + RPC; verified broken by live E2E on 20 Aug)
+- [x] **Now:** automated end-to-end gate — `e2e/run.mjs` drives the real app
+      against the real database (organiser journey + guest QR + server-side
+      persistence checks) and blocks every deploy that fails it
+- [ ] Wk to 6 Sep: sync status visible in-app (a "not saved yet" pill, never a
+      silent failure) + scorecard attestation markers
+- [ ] Wk to 13 Sep: real invites (share link) + web push ("off the 10th in 20
+      minutes", "board finalised")
+- [ ] Wk to 20 Sep: **stats package v1** — streaks, blow-ups, season records;
+      the feature the £39 tier is sold on
+- [ ] By 30 Sep: **THE REAL DAY** — a full society day (8+ players, group
+      scoring on their own phones, QR board at the tee) runs start to finish on
+      Societee. After it passes: golfsocietee.co.uk + the Free/Pro switch.
 
 ## Now — the database (WIRED 6 Aug 2026, v18)
 
