@@ -17,6 +17,7 @@
 import type { Course, HoleInfo, Tee, Union } from "./types";
 import UK_RAW from "./uk-courses.json";
 import PT_RAW from "./pt-courses.json";
+import ES_RAW from "./es-courses.json";
 
 /** Build a card from [par, strokeIndex] pairs, validating as we go. */
 export function makeCard(pairs: [number, number][], expectedPar: number): HoleInfo[] {
@@ -157,7 +158,11 @@ export const UK_DIRECTORY: DirectoryCourse[] = fromRaw(
 export const PT_DIRECTORY: DirectoryCourse[] = fromRaw(
   PT_RAW as [string, string, string, number, number, number | null][]
 );
-export const DIRECTORY: DirectoryCourse[] = [...UK_DIRECTORY, ...PT_DIRECTORY];
+/** Spain — same OSM provenance (ODbL). */
+export const ES_DIRECTORY: DirectoryCourse[] = fromRaw(
+  ES_RAW as [string, string, string, number, number, number | null][]
+);
+export const DIRECTORY: DirectoryCourse[] = [...UK_DIRECTORY, ...PT_DIRECTORY, ...ES_DIRECTORY];
 
 /**
  * Tees organisers have entered for directory courses. Lives in the store
