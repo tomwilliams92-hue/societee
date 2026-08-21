@@ -55,7 +55,7 @@ export type HoleScore = {
  * Ireland allow singles Playing Handicap allowances of 85–100%, while England
  * stays at a mandatory 95% until 2028. The course decides which applies.
  */
-export type Union = "Wales" | "England" | "Scotland" | "Ireland";
+export type Union = "Wales" | "England" | "Scotland" | "Ireland" | "Portugal";
 
 export type Course = {
   id: string;

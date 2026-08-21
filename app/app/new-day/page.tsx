@@ -5,7 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { Header } from "@/components/Chrome";
 import { Badge, BADGES } from "@/components/Badge";
 import { useDB, select, actions } from "@/lib/store";
-import { COURSES, courseOfTee, customTeesFor, searchCourses, teeById, UK_DIRECTORY } from "@/lib/courses";
+import { COURSES, courseOfTee, customTeesFor, searchCourses, teeById, PT_DIRECTORY, UK_DIRECTORY } from "@/lib/courses";
 import { allowancesFor, parseHandicap, formatHandicap } from "@/lib/scoring";
 import { IS_REMOTE } from "@/lib/supabase/config";
 import type { Course, ScoringFormat } from "@/lib/types";
@@ -413,12 +413,13 @@ function NewGame() {
     return (
       <Shell society={society}>
         <PickerHead onBack={() => { setCourseFor(null); setCourseQ(""); }}
-                    placeholder="Search every UK course" q={courseQ} setQ={setCourseQ} autoFocus />
+                    placeholder="Search UK & Portugal courses" q={courseQ} setQ={setCourseQ} autoFocus />
         <div className="grid gap-2 rise">
           {!courseQ.trim() && (
             <p className="label !normal-case !tracking-normal">
               Every UK course is in here — {UK_DIRECTORY.length.toLocaleString("en-GB")} across
-              England, Scotland, Wales and Northern Ireland. Type your club’s name to find it.
+              England, Scotland, Wales and Northern Ireland — plus {PT_DIRECTORY.length} in
+              Portugal for the trips. Type the club’s name to find it.
               The {COURSES.length} below ship with verified scorecards.
             </p>
           )}
@@ -689,7 +690,9 @@ function NewGame() {
               </select>
               <span className="label !normal-case !tracking-normal">
                 {union === "England" ? "Fixed at 95% in England until 2028."
-                  : `${union} allows 85–100% for singles since April 2026.`}
+                  : union === "Portugal"
+                    ? "Abroad the allowance is the organiser's call — 95% is the WHS default."
+                    : `${union} allows 85–100% for singles since April 2026.`}
               </span>
             </label>
           )}

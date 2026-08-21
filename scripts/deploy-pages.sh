@@ -25,6 +25,9 @@ cd "$APP"
 PAGES_BASE_PATH=/societee npm run build:pages
 
 if [ "${SKIP_E2E:-0}" != "1" ]; then
+  # a stale staging server from a previous run would serve a deleted dir (404s)
+  pkill -f "http.server 4173" 2>/dev/null || true
+  sleep 1
   # serve the built bundle under the same /societee prefix Pages uses
   mkdir -p "$STAGE/serve"
   ln -s "$APP/out" "$STAGE/serve/societee"

@@ -15,7 +15,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "./client";
 import { IS_REMOTE } from "./config";
-import { hydrateRemote, update, type DB } from "../store";
+import { hydrateRemote, readDB, update, type DB } from "../store";
 import type { HoleInfo } from "../types";
 
 type Row = Record<string, never>;
@@ -25,7 +25,7 @@ function fragmentFromBoard(d: {
   event: Row; society: Row; tee: Row | null; holes: Row[];
   players: Row[]; entries: Row[]; rounds: Row[]; hole_scores: Row[]; side_comps: Row[];
   group?: Row;
-}): Partial<DB> & { card?: { teeId: string; holes: HoleInfo[] } } {
+}, shareToken = ""): Partial<DB> & { card?: { teeId: string; holes: HoleInfo[] } } {
   const e = d.event as Record<string, unknown>;
   const s = d.society as Record<string, unknown>;
   const frag: Partial<DB> & { card?: { teeId: string; holes: HoleInfo[] } } = {
@@ -39,7 +39,10 @@ function fragmentFromBoard(d: {
       courseId: (e.course_id as string) ?? undefined, teeId: (e.tee_id as string) ?? undefined,
       name: String(e.name), playsOn: String(e.plays_on),
       format: e.format as never, handicapAllowance: Number(e.handicap_allowance ?? 95),
-      status: e.status as never, shareToken: "", selfRegister: Boolean(e.self_register),
+      // The RPC strips share_token from the payload (it IS the credential),
+      // but the board page finds its event BY that token — so the caller
+      // passes the token it fetched with, and we stamp it back on.
+      status: e.status as never, shareToken, selfRegister: Boolean(e.self_register),
     }],
     players: d.players.map((p: Record<string, unknown>) => ({
       id: String(p.id), societyId: String(s.id), name: String(p.name),
@@ -85,7 +88,21 @@ function fragmentFromBoard(d: {
 
 function applyFragment(frag: ReturnType<typeof fragmentFromBoard>, extras?: Partial<DB>) {
   const { card, ...rows } = frag;
-  hydrateRemote({ ...rows, ...extras });
+  // MERGE the fragment into what's already here, never replace whole tables:
+  // a signed-in organiser opening someone else's board must not have their
+  // own societies swapped out from under them. Fragment rows win on key.
+  const cur = readDB();
+  const merged: Partial<DB> = {};
+  const keyOf = (t: string, r: Record<string, unknown>) =>
+    t === "holeScores" ? `${r.roundId}:${r.hole}` : String(r.id);
+  for (const [t, fragRows] of Object.entries({ ...rows, ...extras })) {
+    if (!Array.isArray(fragRows)) continue;
+    const have = new Set(fragRows.map((r) => keyOf(t, r as Record<string, unknown>)));
+    const existing = ((cur as unknown as Record<string, unknown[]>)[t] ?? [])
+      .filter((r) => !have.has(keyOf(t, r as Record<string, unknown>)));
+    (merged as Record<string, unknown>)[t] = [...existing, ...fragRows];
+  }
+  hydrateRemote(merged);
   if (card) {
     // through update() so registerCustomTees/cards land in the same place the
     // organiser's entered cards do — select.card() then just finds it
@@ -107,7 +124,7 @@ export function useGuestBoard(token: string, active: boolean) {
       if (stop) return;
       if (error) { setState("offline"); return; }
       if (!data) { setState("missing"); return; }
-      applyFragment(fragmentFromBoard(data as never));
+      applyFragment(fragmentFromBoard(data as never, token));
       setState("ok");
     };
     void fetchOnce();

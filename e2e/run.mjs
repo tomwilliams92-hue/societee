@@ -143,9 +143,9 @@ try {
   await page.getByRole("button", { name: "Skip for now" }).click(); // stableford default
   await page.getByRole("button", { name: "Continue" }).click(); // rounds: one, today
   await page.getByText("No course set").click();
-  await page.locator('input[placeholder="Search every UK course"]').fill("Conwy");
+  await page.locator('input[placeholder="Search UK & Portugal courses"]').fill("Conwy");
   await page.waitForTimeout(600);
-  await page.getByText("Conwy (Caernarvonshire)").first().click();
+  await page.getByText("Conwy", { exact: true }).first().click();
   await page.waitForTimeout(400);
   await page.getByText(/tees$/).first().click(); // first tee set
   await page.waitForTimeout(400);
@@ -185,8 +185,13 @@ try {
   const guestCtx = await browser.newContext({ viewport: { width: 390, height: 844 } });
   const guest = await guestCtx.newPage();
   await guest.goto(`${BASE}/live-board/?b=${ev.share_token}`, { timeout: 60000 });
-  await guest.waitForTimeout(3500);
-  const board = await guest.locator("body").innerText();
+  // cold load + hydrate + RPC + render — poll rather than guess a delay
+  let board = "";
+  for (let i = 0; i < 20; i++) {
+    board = await guest.locator("body").innerText();
+    if (board.toUpperCase().includes("EDDIE")) break;
+    await guest.waitForTimeout(1500);
+  }
   if (!board.toUpperCase().includes("EDDIE")) throw new Error("guest board doesn't show the player");
   await guestCtx.close();
 
@@ -199,6 +204,13 @@ try {
 } catch (e) {
   console.error(`\n❌ E2E FAIL at step ${steps.length} ("${steps.at(-1)}"): ${e.message}`);
   console.error(`   target: ${BASE}`);
+  try {
+    const pages = browser?.contexts().flatMap((c) => c.pages()) ?? [];
+    if (pages.length) {
+      await pages.at(-1).screenshot({ path: join(HERE, "fail.png") });
+      console.error(`   screen at failure: e2e/fail.png`);
+    }
+  } catch { /* screenshot is best-effort */ }
   if (browser) await browser.close();
   process.exit(1);
 }

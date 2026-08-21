@@ -16,6 +16,7 @@
 
 import type { Course, HoleInfo, Tee, Union } from "./types";
 import UK_RAW from "./uk-courses.json";
+import PT_RAW from "./pt-courses.json";
 
 /** Build a card from [par, strokeIndex] pairs, validating as we go. */
 export function makeCard(pairs: [number, number][], expectedPar: number): HoleInfo[] {
@@ -144,11 +145,19 @@ const normName = (s: string) =>
 
 const VERIFIED_KEYS = new Set(COURSES.flatMap((c) => [normName(c.name), normName(c.clubName ?? "")]));
 
-export const UK_DIRECTORY: DirectoryCourse[] = (
+const fromRaw = (raw: [string, string, string, number, number, number | null][]) =>
+  raw
+    .map(([id, name, country, lat, lon, holes]) => ({ id, name, country: country as Union, lat, lon, holes }))
+    .filter((c) => !VERIFIED_KEYS.has(normName(c.name))); // verified entries win
+
+export const UK_DIRECTORY: DirectoryCourse[] = fromRaw(
   UK_RAW as [string, string, string, number, number, number | null][]
-)
-  .map(([id, name, country, lat, lon, holes]) => ({ id, name, country: country as Union, lat, lon, holes }))
-  .filter((c) => !VERIFIED_KEYS.has(normName(c.name))); // verified entries win
+);
+/** Portugal — the trips. Same OSM provenance as the UK set (ODbL). */
+export const PT_DIRECTORY: DirectoryCourse[] = fromRaw(
+  PT_RAW as [string, string, string, number, number, number | null][]
+);
+export const DIRECTORY: DirectoryCourse[] = [...UK_DIRECTORY, ...PT_DIRECTORY];
 
 /**
  * Tees organisers have entered for directory courses. Lives in the store
@@ -161,7 +170,7 @@ export const customTeesFor = (courseId: string): Tee[] =>
   Object.values(CUSTOM).filter((t) => t.courseId === courseId);
 
 const directoryCourse = (id?: string): Course | undefined => {
-  const d = UK_DIRECTORY.find((c) => c.id === id);
+  const d = DIRECTORY.find((c) => c.id === id);
   return d && { id: d.id, name: d.name, clubName: d.name, country: d.country, tees: customTeesFor(d.id) };
 };
 
@@ -179,7 +188,7 @@ export function searchCourses(q: string, limit = 30): Course[] {
   if (!needle) return COURSES.slice(0, limit);
   const hit = (name: string) => normName(name).includes(needle);
   const verified = COURSES.filter((c) => hit(c.name) || hit(c.clubName ?? ""));
-  const rest = UK_DIRECTORY.filter((c) => hit(c.name))
+  const rest = DIRECTORY.filter((c) => hit(c.name))
     .slice(0, Math.max(0, limit - verified.length))
     .map((c) => courseById(c.id)!);
   return [...verified, ...rest].slice(0, limit);
