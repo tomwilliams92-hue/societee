@@ -143,7 +143,7 @@ try {
   await page.getByRole("button", { name: "Skip for now" }).click(); // stableford default
   await page.getByRole("button", { name: "Continue" }).click(); // rounds: one, today
   await page.getByText("No course set").click();
-  await page.locator('input[placeholder="Search UK & Portugal courses"]').fill("Conwy");
+  await page.locator('input[placeholder^="Search UK"]').fill("Conwy");
   await page.waitForTimeout(600);
   await page.getByText("Conwy", { exact: true }).first().click();
   await page.waitForTimeout(400);
