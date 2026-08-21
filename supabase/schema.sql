@@ -301,7 +301,12 @@ $$;
 create policy "own profile"        on profiles      for all using (id = auth.uid());
 create policy "own subscription"   on subscriptions for select using (profile_id = auth.uid());
 
-create policy "read own societies" on societies for select using (can_organise(id));
+-- owner_id checked DIRECTLY, not only via can_organise(id): that function
+-- looks the row up in this same table, which is circular for a row still
+-- being inserted — PostgREST upserts (ON CONFLICT DO UPDATE) evaluate the
+-- SELECT policy against the new row and failed 42501 on every app save.
+create policy "read own societies" on societies for select
+  using (owner_id = auth.uid() or can_organise(id));
 create policy "create societies"   on societies for insert with check (owner_id = auth.uid());
 create policy "owner edits"        on societies for update using (owner_id = auth.uid());
 create policy "owner deletes"      on societies for delete using (owner_id = auth.uid());
