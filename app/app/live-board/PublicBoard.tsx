@@ -53,7 +53,7 @@ export function PublicBoard({ token }: { token: string }) {
               ? "One moment."
               : guest === "offline"
                 ? "Couldn’t reach the scoreboard — it’ll keep trying."
-                : "The link may have expired, or the day hasn’t started."}
+                : "If the day was only just set up, it may still be uploading from the organiser’s phone — ask them to open Societee, then pull to refresh here."}
           </p>
         </div>
       </main>

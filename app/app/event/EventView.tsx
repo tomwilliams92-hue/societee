@@ -9,14 +9,18 @@ import { Leaderboard, type BoardRow } from "@/components/Leaderboard";
 import { ScorecardModal } from "@/components/Scorecard";
 import { HoleEntryModal } from "@/components/HoleEntry";
 import { ConfirmDelete } from "@/components/ConfirmDelete";
+import { CopyButton } from "@/components/CopyButton";
 import { useDB, select, actions } from "@/lib/store";
 import { courseHandicap, formatHandicap, formatPlayingHandicap, rank } from "@/lib/scoring";
 import { courseById, teeById } from "@/lib/courses";
+import { useSync } from "@/lib/supabase/sync";
+import { IS_REMOTE } from "@/lib/supabase/config";
 
 export function EventView({ eventId }: { eventId: string }) {
   const db = useDB();
   const router = useRouter();
   const ev = select.event(db, eventId);
+  const sync = useSync();
   const [origin, setOrigin] = useState("");
   const [showHcp, setShowHcp] = useState<string | null>(null);
   const [cardFor, setCardFor] = useState<string | null>(null);
@@ -322,12 +326,7 @@ export function EventView({ eventId }: { eventId: string }) {
                           <Link href={`/scorecard?g=${g.scorerToken}`} className="btn btn-ghost flex-1 !min-h-[2.5rem] !text-[0.75rem]">
                             Open
                           </Link>
-                          <button
-                            className="btn btn-ghost !min-h-[2.5rem] !text-[0.75rem]"
-                            onClick={() => navigator.clipboard?.writeText(url)}
-                          >
-                            Copy link
-                          </button>
+                          <CopyButton text={url} className="btn btn-ghost !min-h-[2.5rem] !text-[0.75rem]" />
                         </div>
                       </div>
                     );
@@ -377,6 +376,16 @@ export function EventView({ eventId }: { eventId: string }) {
           {/* --------------------------------------------------- share -- */}
           <aside id="share-board" className="min-w-0 scroll-mt-20 lg:sticky lg:top-20 lg:self-start">
             <SectionTitle aside={<span className="label">Scan to watch</span>}>Share the board</SectionTitle>
+            {/* Don't let anyone WhatsApp a link that only works on this phone:
+                if this device's changes haven't reached the server, say so
+                right where the QR and copy buttons live. */}
+            {IS_REMOTE && (sync.status === "error" || sync.status === "offline") && (
+              <p className="label mb-3 rounded-[10px] border px-3 py-2.5 !normal-case !tracking-normal"
+                 style={{ borderColor: "rgba(255,68,56,0.5)", color: "var(--color-live)" }}>
+                This day hasn’t uploaded from your phone yet — links and QR codes won’t work for
+                anyone else until it has. Check the sync status on the Profile tab.
+              </p>
+            )}
             <div className="card p-5 text-center">
               <div className="mx-auto inline-block rounded-[3px] bg-white p-3 shadow-inner">
                 {origin && (
@@ -391,12 +400,7 @@ export function EventView({ eventId }: { eventId: string }) {
                 <Link href={`/live-board?b=${ev.shareToken}`} className="btn btn-primary flex-1">
                   Open board
                 </Link>
-                <button
-                  className="btn btn-ghost"
-                  onClick={() => navigator.clipboard?.writeText(shareUrl)}
-                >
-                  Copy link
-                </button>
+                <CopyButton text={shareUrl} className="btn btn-ghost" />
               </div>
               <p className="num mt-3 break-all text-[0.72rem] text-[var(--color-dim)]">
                 {shareUrl || "…"}
@@ -413,12 +417,8 @@ export function EventView({ eventId }: { eventId: string }) {
                   <Link href={`/register?e=${ev.shareToken}`} className="btn btn-ghost flex-1 !min-h-[2.5rem] !text-[0.75rem]">
                     Open form
                   </Link>
-                  <button
-                    className="btn btn-ghost !min-h-[2.5rem] !text-[0.75rem]"
-                    onClick={() => navigator.clipboard?.writeText(`${origin}/register?e=${ev.shareToken}`)}
-                  >
-                    Copy link
-                  </button>
+                  <CopyButton text={`${origin}/register?e=${ev.shareToken}`}
+                              className="btn btn-ghost !min-h-[2.5rem] !text-[0.75rem]" />
                 </div>
               </div>
             )}
